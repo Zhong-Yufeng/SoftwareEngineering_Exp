@@ -2,4 +2,7 @@
 模板/
 课件/
 .tmp_final/
+.tmp_lib/
+.tmp_lib4/
+tmp_*
 *.zip
