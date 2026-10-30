@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<title>界面12 统计报表</title>
+<style>
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:18px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.stat .num{font-size:28px;font-weight:700;margin:6px 0 2px}
+.stat .lbl{color:var(--muted);font-size:13px}
+.chart{display:flex;align-items:flex-end;gap:18px;height:180px;padding:10px 6px 0;border-bottom:1px solid var(--line)}
+.bar-group{flex:1;display:flex;align-items:flex-end;gap:6px;justify-content:center}
+.bar{width:18px;border-radius:4px 4px 0 0}
+.b1{background:#6366f1}.b2{background:#f59e0b}.b3{background:#10b981}
+.legend{display:flex;gap:18px;font-size:12px;color:var(--muted);margin-top:12px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.xaxis{display:flex;gap:18px;font-size:12px;color:var(--muted);margin-top:8px;text-align:center}
+.xaxis span{flex:1}
+</style></head>
+<body>
+<div class="topbar">
+  <div class="logo">校园二手交易平台 · 管理后台</div>
+  <nav>
+    <a href="#">商品审核</a>
+    <a href="#">违规处置</a>
+    <a href="#">操作日志</a>
+    <a class="on" href="#">统计报表</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="who"><span class="avatar">管</span> 管理员</div>
+</div>
+
+<div class="wrap">
+  <h1>统计报表</h1>
+  <p class="sub">REQ-022 统计汇总 · 预约量按日志中的「发起预约」统计，成交量按商品状态为交易完成统计</p>
+
+  <div class="stats">
+    <div class="stat"><div class="lbl">今日商品发布量</div><div class="num">37</div><div class="lbl">较昨日 +5</div></div>
+    <div class="stat"><div class="lbl">今日预约量</div><div class="num">129</div><div class="lbl">含已删除记录的发起次</div></div>
+    <div class="stat"><div class="lbl">今日完成交易量</div><div class="num">18</div><div class="lbl">商品状态 = 交易完成</div></div>
+  </div>
+
+  <div class="card">
+    <h3>近 7 日趋势</h3>
+    <div class="chart">
+      <div class="bar-group"><div class="bar b1" style="height:60px"></div><div class="bar b2" style="height:96px"></div><div class="bar b3" style="height:30px"></div></div>
+      <div class="bar-group"><div class="bar b1" style="height:78px"></div><div class="bar b2" style="height:120px"></div><div class="bar b3" style="height:42px"></div></div>
+      <div class="bar-group"><div class="bar b1" style="height:52px"></div><div class="bar b2" style="height:88px"></div><div class="bar b3" style="height:26px"></div></div>
+      <div class="bar-group"><div class="bar b1" style="height:92px"></div><div class="bar b2" style="height:140px"></div><div class="bar b3" style="height:48px"></div></div>
+      <div class="bar-group"><div class="bar b1" style="height:70px"></div><div class="bar b2" style="height:110px"></div><div class="bar b3" style="height:36px"></div></div>
+      <div class="bar-group"><div class="bar b1" style="height:84px"></div><div class="bar b2" style="height:126px"></div><div class="bar b3" style="height:44px"></div></div>
+      <div class="bar-group"><div class="bar b1" style="height:100px"></div><div class="bar b2" style="height:150px"></div><div class="bar b3" style="height:52px"></div></div>
+    </div>
+    <div class="xaxis"><span>10-21</span><span>10-22</span><span>10-23</span><span>10-24</span><span>10-25</span><span>10-26</span><span>10-27</span></div>
+    <div class="legend">
+      <span><i class="b1"></i>商品发布量</span>
+      <span><i class="b2"></i>预约量</span>
+      <span><i class="b3"></i>完成交易量</span>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:18px">
+    <div class="card" style="flex:1">
+      <h3>卖家视角（同一页面切换）</h3>
+      <div class="stats" style="grid-template-columns:1fr 1fr;margin:0">
+        <div class="stat" style="box-shadow:none"><div class="lbl">在售商品</div><div class="num">4</div></div>
+        <div class="stat" style="box-shadow:none"><div class="lbl">已完成交易</div><div class="num">12</div></div>
+      </div>
+    </div>
+    <div class="card" style="flex:1">
+      <h3>口径说明</h3>
+      <p style="margin:0;color:#4b5563;font-size:13px">
+        预约记录被删除后，历史预约量不得减少，因此预约量只统计日志；<br>
+        完成交易量以商品状态为「交易完成」计数；无数据时显示 0，不报错。
+      </p>
+    </div>
+  </div>
+</div>
+</body></html>

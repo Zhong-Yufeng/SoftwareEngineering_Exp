@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<title>界面5 我的预约</title></head>
+<body>
+<div class="topbar">
+  <div class="logo">校园二手交易平台</div>
+  <nav>
+    <a href="#">逛商品</a>
+    <a class="on" href="#">我的预约</a>
+    <a href="#">卖家中心</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="who"><span class="avatar">钟</span> 钟同学 · 买家</div>
+</div>
+
+<div class="wrap">
+  <h1>我的预约</h1>
+  <p class="sub">REQ-010 发起预约 · REQ-011 取消预约 · REQ-019 多条待确认可并存</p>
+
+  <div class="alert alert-info">
+    预约只有两种存续状态：<b>待确认</b> 与 <b>已成功</b>。被取消、未被选中、商品下架等情况会使预约直接失效，记录随即删除，不再显示在列表中（REQ-019）。
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th style="width:30%">商品</th><th>卖家</th><th>发起时间</th><th>状态</th><th style="width:150px">操作</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>高等数学 第七版 上下册</b><div class="meta"><span>25 元</span><span>教材</span></div></td>
+          <td>李同学</td>
+          <td>2026-10-27 14:35</td>
+          <td><span class="badge b-wait">待确认</span></td>
+          <td><button class="btn btn-sm btn-danger">取消预约</button></td>
+        </tr>
+        <tr>
+          <td><b>罗技 M170 无线鼠标</b><div class="meta"><span>45 元</span><span>数码</span></div></td>
+          <td>王同学</td>
+          <td>2026-10-27 10:12</td>
+          <td><span class="badge b-ok">已成功</span></td>
+          <td><button class="btn btn-sm">联系卖家</button></td>
+        </tr>
+        <tr>
+          <td><b>床上小桌板</b><div class="meta"><span>20 元</span><span>生活用品</span></div></td>
+          <td>赵同学</td>
+          <td>2026-10-26 19:04</td>
+          <td><span class="badge b-wait">待确认</span></td>
+          <td><button class="btn btn-sm btn-danger">取消预约</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="row" style="margin-top:16px">
+    <div class="card" style="flex:1">
+      <h3>取消规则</h3>
+      <p style="margin:0;color:#4b5563;font-size:13px">
+        卖家确认前，买家可取消自己的预约，取消后记录直接删除，商品保持已发布；<br>
+        卖家确认后不能再取消，取消操作会被拒绝并提示（REQ-011）。
+      </p>
+    </div>
+    <div class="card" style="flex:1">
+      <h3>旧页面操作</h3>
+      <p style="margin:0;color:#4b5563;font-size:13px">
+        在已过期的页面上操作一条已被删除的预约时，系统拒绝并提示「商品已被约走」，<br>
+        不会新建记录，也不会改变商品状态（REQ-020）。
+      </p>
+    </div>
+  </div>
+</div>
+</body></html>

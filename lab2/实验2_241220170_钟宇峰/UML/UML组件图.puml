@@ -1,0 +1,76 @@
+@startuml UML组件图
+' 校园二手交易平台 —— 组件图
+' 依据：requirements.md REQ-001 ~ REQ-030
+title 校园二手交易平台 组件图
+
+skinparam componentStyle rectangle
+
+package "表现层" {
+  [Web 界面\n买家 / 卖家 / 管理员] as UI
+}
+
+package "业务层" {
+  [账号与权限模块] as AUTH
+  [商品与审核模块] as ITEM
+  [预约与交易模块] as TRADE
+  [日志模块] as LOG
+  [统计模块] as STAT
+}
+
+database "数据库" as DB
+
+interface "鉴权接口" as I_AUTH
+interface "商品查询接口" as I_ITEM
+interface "商品状态更新接口" as I_ITEM_UPD
+interface "日志查询接口" as I_LOG
+
+AUTH -up- I_AUTH
+ITEM -up- I_ITEM
+ITEM -up- I_ITEM_UPD
+LOG -up- I_LOG
+
+UI --> AUTH : 登录 / 注册 / 封禁提示
+UI --> ITEM : 发布 / 查询 / 审核
+UI --> TRADE : 预约 / 确认 / 完成
+UI --> LOG : 日志查询
+UI --> STAT : 报表查看
+
+TRADE ..> I_AUTH : 使用
+TRADE ..> I_ITEM : 使用
+TRADE ..> I_ITEM_UPD : 使用
+ITEM ..> I_AUTH : 使用
+STAT ..> I_AUTH : 使用
+STAT ..> I_ITEM : 使用
+STAT ..> I_LOG : 使用
+
+AUTH --> DB
+ITEM --> DB
+TRADE --> DB
+LOG --> DB
+STAT --> DB
+
+note right of AUTH
+  管理员联系方式与封禁提示文案属部署配置项，
+  由账号与权限模块读取，不作为组件建模
+  （REQ-016 / REQ-017）
+end note
+
+note right of TRADE
+  预约与交易模块对外只暴露
+  发起预约 / 取消预约 / 确认预约 / 完成交易
+  预约记录失效即删除（REQ-011 / REQ-012 / REQ-019）
+  商品状态变更须经「商品状态更新接口」，不直接读写商品数据
+end note
+
+note bottom of STAT
+  预约量取自日志模块的「发起预约」记录，
+  不以预约表为准（REQ-022）
+end note
+
+note bottom of DB
+  主要数据表：
+  用户表 / 商品表 / 预约表 /
+  卖家认证申请表 / 审核记录表 / 操作日志表
+end note
+
+@enduml

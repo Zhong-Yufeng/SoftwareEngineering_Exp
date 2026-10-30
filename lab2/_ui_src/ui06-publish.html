@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<title>界面6 发布商品</title>
+<style>
+.upload{display:flex;gap:10px;flex-wrap:wrap}
+.up-box{width:92px;height:92px;border:1px dashed #c9cdd8;border-radius:8px;display:grid;place-items:center;color:#9ca3af;font-size:12px;background:#fafbfc}
+.up-box.filled{background:#eef2ff;border-style:solid;border-color:#c7d2fe;color:#6366f1}
+.foot{display:flex;gap:12px;align-items:center;border-top:1px solid var(--line);padding-top:18px;margin-top:6px}
+</style></head>
+<body>
+<div class="topbar">
+  <div class="logo">校园二手交易平台</div>
+  <nav>
+    <a href="#">逛商品</a>
+    <a href="#">我的预约</a>
+    <a class="on" href="#">卖家中心</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="who"><span class="avatar">钟</span> 钟同学 · 卖家</div>
+</div>
+
+<div class="wrap" style="max-width:860px">
+  <h1>发布商品</h1>
+  <p class="sub">REQ-005 商品基本信息 · REQ-006 保存草稿与提交审核 · REQ-027 提交后 2 秒内反馈</p>
+
+  <div class="card">
+    <div class="field">
+      <label class="req">标题</label>
+      <input class="input" value="高等数学 第七版 上下册（共两册）">
+    </div>
+
+    <div class="field">
+      <label class="req">描述</label>
+      <textarea class="input" rows="3">大一高数上下册，正版，书内有少量铅笔笔记。封面边角轻微磨损，不影响使用。</textarea>
+    </div>
+
+    <div class="row">
+      <div class="field" style="flex:1">
+        <label class="req">分类</label>
+        <select class="select"><option>教材</option><option>数码</option><option>服饰</option><option>生活用品</option></select>
+      </div>
+      <div class="field" style="flex:1">
+        <label class="req">价格（元）</label>
+        <input class="input" value="25">
+      </div>
+      <div class="field" style="flex:1">
+        <label class="req">成色</label>
+        <select class="select"><option>九成新</option><option>全新</option><option>有瑕疵</option></select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="req">图片</label>
+      <div class="upload">
+        <div class="up-box filled">主图</div>
+        <div class="up-box filled">图 2</div>
+        <div class="up-box">+ 上传</div>
+      </div>
+      <div class="hint">至少上传一张；缺少图片时不允许提交</div>
+    </div>
+
+    <div class="row">
+      <div class="field" style="flex:1">
+        <label class="req">交易方式</label>
+        <input class="input" value="校内自提">
+      </div>
+      <div class="field" style="flex:1">
+        <label class="req">交易地点</label>
+        <input class="input" value="三号宿舍楼下">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>卖家联系方式</label>
+      <input class="input" value="138****1234（默认取账号绑定）" disabled>
+      <div class="hint">发布时间与商品状态由系统维护，卖家不能自行修改</div>
+    </div>
+
+    <div class="alert alert-warn" style="margin:0">
+      当前状态：<span class="badge b-draft">草稿</span>　保存草稿不公开；提交审核后商品进入 <span class="badge b-pending">待审核</span>，由管理员审核。
+    </div>
+
+    <div class="foot">
+      <button class="btn">保存草稿</button>
+      <button class="btn btn-primary">提交审核</button>
+      <span class="note" style="margin:0">同一商品短时间内重复提交审核不会产生重复记录（REQ-006）</span>
+    </div>
+  </div>
+</div>
+</body></html>

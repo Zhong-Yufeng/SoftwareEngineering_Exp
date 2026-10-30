@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<title>界面4 商品详情与预约</title>
+<style>
+.detail{display:grid;grid-template-columns:420px 1fr;gap:24px}
+.gallery{height:320px;border-radius:10px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);display:grid;place-items:center;color:#a5b4fc}
+.thumbs{display:flex;gap:8px;margin-top:10px}
+.thumbs div{width:64px;height:64px;border-radius:8px;background:#eef2ff;border:1px solid var(--line)}
+.thumbs div.on{border-color:var(--primary)}
+.buybox{border-top:1px dashed var(--line);margin-top:18px;padding-top:18px}
+</style></head>
+<body>
+<div class="topbar">
+  <div class="logo">校园二手交易平台</div>
+  <nav>
+    <a class="on" href="#">逛商品</a>
+    <a href="#">我的预约</a>
+    <a href="#">卖家中心</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="who"><span class="avatar">钟</span> 钟同学 · 买家</div>
+</div>
+
+<div class="wrap">
+  <h1>商品详情</h1>
+  <p class="sub">REQ-008 已发布商品可查询 · REQ-010 发起预约（不能跳过预约直接购买）</p>
+
+  <div class="detail">
+    <div>
+      <div class="gallery">商品主图（图片至少一张）</div>
+      <div class="thumbs"><div class="on"></div><div></div><div></div></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <h2 style="margin:0;font-size:20px;flex:1">高等数学 第七版 上下册（共两册）</h2>
+        <span class="badge b-on">已发布</span>
+      </div>
+      <div class="price" style="font-size:26px;margin:12px 0 4px">25 <small>元</small></div>
+
+      <dl class="kv" style="margin-top:16px">
+        <dt>分类</dt><dd>教材</dd>
+        <dt>成色</dt><dd>九成新</dd>
+        <dt>交易方式</dt><dd>校内自提</dd>
+        <dt>交易地点</dt><dd>三号宿舍楼下</dd>
+        <dt>卖家联系方式</dt><dd>138****1234（默认取账号绑定）</dd>
+        <dt>发布时间</dt><dd>2026-10-27 14:22（系统维护，卖家不可改）</dd>
+      </dl>
+
+      <div class="buybox">
+        <div class="alert alert-info" style="margin-bottom:14px">
+          发起预约后需等待卖家确认；卖家确认前可自行取消。确认后该预约生效，其余预约自动失效。
+        </div>
+        <div style="display:flex;gap:12px">
+          <button class="btn btn-primary" style="flex:1;height:42px">发起预约</button>
+          <button class="btn" style="width:120px">联系卖家</button>
+        </div>
+        <div class="note">同一买家对同一商品重复提交只保留一条记录，不新建（REQ-020）</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <h3>商品描述</h3>
+    <p style="margin:0;color:#4b5563">
+      大一高数上下册，正版，书内有少量铅笔笔记，可以擦掉。封面边角轻微磨损，不影响使用。
+      期末季用不上了，便宜出，欢迎自提，可当面验书。
+    </p>
+  </div>
+</div>
+</body></html>

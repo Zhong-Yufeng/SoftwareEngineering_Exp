@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<title>界面2 注册</title></head>
+<body>
+<div class="topbar">
+  <div class="logo">校园二手交易平台</div>
+  <div class="spacer"></div>
+  <div class="who">已有账号？<a href="#">返回登录</a></div>
+</div>
+
+<div class="wrap" style="max-width:720px">
+  <h1>注册账号</h1>
+  <p class="sub">REQ-001 用户注册 · 注册成功后默认为买家身份</p>
+
+  <div class="alert alert-info">
+    管理员账号不开放注册，由平台运营方线下分配（REQ-004）。卖家身份需在买家基础上另行申请（REQ-003）。
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label class="req">注册方式</label>
+      <div class="row">
+        <label style="font-weight:400"><input type="radio" name="t" checked> 手机号</label>
+        <label style="font-weight:400"><input type="radio" name="t"> 学号</label>
+      </div>
+      <div class="hint">两者至少填写一项，且同一手机号或学号不可重复注册</div>
+    </div>
+
+    <div class="row">
+      <div class="field" style="flex:1">
+        <label class="req">手机号</label>
+        <input class="input" value="13800001234">
+      </div>
+      <div class="field" style="flex:1">
+        <label>学号</label>
+        <input class="input" value="241220170">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field" style="flex:1">
+        <label class="req">密码</label>
+        <input class="input" type="password" value="········">
+        <div class="hint">至少 6 位</div>
+      </div>
+      <div class="field" style="flex:1">
+        <label class="req">确认密码</label>
+        <input class="input" type="password" value="········">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field" style="flex:1">
+        <label class="req">昵称</label>
+        <input class="input" value="钟同学">
+        <div class="hint">必填，用于列表与详情页展示</div>
+      </div>
+      <div class="field" style="flex:1">
+        <label class="req">联系方式</label>
+        <input class="input" value="138****1234">
+        <div class="hint">必填，发布商品时默认使用</div>
+      </div>
+    </div>
+
+    <div class="note">昵称、联系方式未填写时不允许注册；注册信息重复（同一手机号或学号）时提示「该账号已注册」，不写入数据</div>
+
+    <div style="margin-top:18px;display:flex;gap:12px">
+      <button class="btn btn-primary">注册并登录</button>
+      <button class="btn">取消</button>
+    </div>
+  </div>
+</div>
+</body></html>

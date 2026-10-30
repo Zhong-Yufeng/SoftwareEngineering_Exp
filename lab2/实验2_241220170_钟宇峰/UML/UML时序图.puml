@@ -1,0 +1,60 @@
+@startuml UML时序图
+' 校园二手交易平台 —— 时序图（并发预约场景）
+' 依据：requirements.md REQ-012 / REQ-019 / REQ-020 / REQ-013
+title 校园二手交易平台 时序图：并发预约与卖家确认
+
+autonumber
+
+actor "买家甲" as B1
+actor "买家乙" as B2
+participant "预约与交易模块" as SVC
+participant "商品与审核模块" as ITEM
+actor "卖家" as S
+participant "日志模块" as LOG
+
+group 并发发起预约
+  B1 -> SVC : 发起预约(商品P)
+  SVC -> ITEM : 查询商品P 状态
+  ITEM --> SVC : 已发布
+  SVC -> SVC : 校验甲无待确认 / 已成功记录
+  SVC -> SVC : 创建记录①：待确认
+  SVC -> LOG : 写日志（发起预约）
+  SVC --> B1 : 预约成功（待确认）
+
+  B2 -> SVC : 发起预约(商品P)
+  SVC -> ITEM : 查询商品P 状态
+  ITEM --> SVC : 已发布
+  SVC -> SVC : 创建记录②：待确认
+  SVC -> LOG : 写日志（发起预约）
+  SVC --> B2 : 预约成功（待确认）
+end
+
+group 卖家确认甲的预约
+  S -> SVC : 确认记录①
+  SVC -> ITEM : 商品P 是否仍为已发布
+  ITEM --> SVC : 是
+  SVC -> SVC : 记录① 待确认 → 已成功
+  SVC -> ITEM : 更新商品状态（P：已发布 → 已确认）
+  ITEM --> SVC : 更新成功
+  SVC -> SVC : 删除记录②（待确认）
+  SVC -> LOG : 写日志（确认预约、预约记录删除）
+  SVC --> S : 确认成功
+end
+
+group 旧页面操作被拒
+  B2 -> SVC : 用旧页面操作记录②
+  SVC -> SVC : 查无该预约记录
+  SVC -> ITEM : 查询商品P 状态
+  ITEM --> SVC : 已确认
+  SVC --> B2 : 拒绝并提示「商品已被约走」（REQ-020）
+end
+
+group 交易完成
+  S -> SVC : 完成交易
+  SVC -> ITEM : 更新商品状态（P：已确认 → 交易完成）
+  SVC -> LOG : 写日志（完成交易）
+  SVC --> S : 完成
+  note over SVC : 记录①保持「已成功」，不删除（REQ-013）
+end
+
+@enduml

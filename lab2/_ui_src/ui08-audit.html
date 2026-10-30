@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<title>界面8 商品审核</title>
+<style>
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.tabs a{padding:10px 16px;color:var(--muted);font-size:13px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a.on{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+</style></head>
+<body>
+<div class="topbar">
+  <div class="logo">校园二手交易平台 · 管理后台</div>
+  <nav>
+    <a class="on" href="#">商品审核</a>
+    <a href="#">违规处置</a>
+    <a href="#">操作日志</a>
+    <a href="#">统计报表</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="who"><span class="avatar">管</span> 管理员</div>
+</div>
+
+<div class="wrap">
+  <h1>商品审核</h1>
+  <p class="sub">REQ-007 审核通过变为已发布，驳回则变为驳回并记录理由</p>
+
+  <div class="tabs">
+    <a class="on" href="#">待审核（3）</a>
+    <a href="#">已通过</a>
+    <a href="#">已驳回</a>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th style="width:30%">商品</th><th>卖家</th><th>分类 / 价格</th><th>提交时间</th><th>状态</th><th style="width:230px">操作</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>高等数学 第七版 上下册</b><div class="meta"><span>图片 3 张</span></div></td>
+          <td>钟同学（学号 241****70）</td>
+          <td>教材 / 25 元</td>
+          <td>2026-10-27 14:22</td>
+          <td><span class="badge b-pending">待审核</span></td>
+          <td><button class="btn btn-sm btn-primary">通过</button> <button class="btn btn-sm btn-danger">驳回</button></td>
+        </tr>
+        <tr>
+          <td><b>二手 iPad 保护壳</b><div class="meta"><span>图片 1 张</span></div></td>
+          <td>王同学（学号 241****31）</td>
+          <td>数码 / 15 元</td>
+          <td>2026-10-27 13:40</td>
+          <td><span class="badge b-pending">待审核</span></td>
+          <td><button class="btn btn-sm btn-primary">通过</button> <button class="btn btn-sm btn-danger">驳回</button></td>
+        </tr>
+        <tr>
+          <td><b>自行车（校内代步）</b><div class="meta"><span>图片 2 张</span></div></td>
+          <td>赵同学（学号 241****08）</td>
+          <td>生活用品 / 180 元</td>
+          <td>2026-10-27 11:05</td>
+          <td><span class="badge b-pending">待审核</span></td>
+          <td><button class="btn btn-sm btn-primary">通过</button> <button class="btn btn-sm btn-danger">驳回</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>驳回理由（弹层示例）</h3>
+    <div class="field">
+      <label class="req">驳回理由</label>
+      <textarea class="input" rows="3">商品描述含校外联系方式，请修改后重新提交。</textarea>
+      <div class="hint">理由随审核记录保存，卖家可见；驳回后商品状态变为「驳回」，卖家可修改后重新提交</div>
+    </div>
+    <div style="display:flex;gap:12px">
+      <button class="btn btn-danger">确认驳回</button>
+      <button class="btn">取消</button>
+    </div>
+    <div class="note">对已发布商品再次执行审核应被拒绝；每次审核动作都会写入操作日志（REQ-007、REQ-021）</div>
+  </div>
+</div>
+</body></html>

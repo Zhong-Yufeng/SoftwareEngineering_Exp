@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<title>界面7 卖家确认预约</title>
+<style>
+.item-head{display:flex;gap:16px;align-items:center}
+.item-head .thumb{width:110px;height:82px;border-radius:8px}
+</style></head>
+<body>
+<div class="topbar">
+  <div class="logo">校园二手交易平台</div>
+  <nav>
+    <a href="#">逛商品</a>
+    <a href="#">我的预约</a>
+    <a class="on" href="#">卖家中心</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="who"><span class="avatar">钟</span> 钟同学 · 卖家</div>
+</div>
+
+<div class="wrap">
+  <h1>我的商品 · 确认预约</h1>
+  <p class="sub">REQ-012 卖家确认预约 · REQ-019 多买家可同时预约，确认一条后其余作废（删除记录）</p>
+
+  <div class="alert alert-warn">
+    同一商品可能有多个买家同时预约。<b>确认其中一条后，其余待确认预约记录将被直接删除</b>，商品状态变为「已确认」，且不能再次确认（REQ-012）。
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <div class="item-head">
+      <div class="thumb" style="display:grid;place-items:center;background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:#a5b4fc;font-size:12px">主图</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:16px">高等数学 第七版 上下册（共两册）</div>
+        <div class="meta" style="margin-top:6px"><span class="price" style="font-size:16px">25 元</span><span>教材</span><span>九成新</span><span>校内自提</span></div>
+      </div>
+      <div style="text-align:right">
+        <span class="badge b-on">已发布</span>
+        <div class="note" style="margin-top:8px">待确认预约 <b style="color:#d97706">2</b> 条</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>待确认预约</h3>
+    <table>
+      <thead>
+        <tr><th style="width:22%">买家</th><th>联系方式</th><th>发起时间</th><th>状态</th><th style="width:180px">操作</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>陈同学</b><div class="meta"><span>买家</span></div></td>
+          <td>139****8821</td>
+          <td>2026-10-27 14:35</td>
+          <td><span class="badge b-wait">待确认</span></td>
+          <td><button class="btn btn-sm btn-primary">确认这条预约</button></td>
+        </tr>
+        <tr>
+          <td><b>刘同学</b><div class="meta"><span>买家</span></div></td>
+          <td>137****3096</td>
+          <td>2026-10-27 15:02</td>
+          <td><span class="badge b-wait">待确认</span></td>
+          <td><button class="btn btn-sm btn-primary">确认这条预约</button></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note">确认后：被选中预约变为 <span class="badge b-ok">已成功</span>，另一条记录删除，商品变为 <span class="badge b-confirm">已确认</span></div>
+  </div>
+
+  <div class="row" style="margin-top:18px">
+    <div class="card" style="flex:1">
+      <h3>确认后的下一步</h3>
+      <p style="margin:0;color:#4b5563;font-size:13px">
+        商品状态为「已确认」表示双方已约好。线下当面交易完成后，由卖家在系统中点击「完成交易」，
+        商品变为 <span class="badge b-done">交易完成</span>，该商品不再可预约（REQ-013）。
+      </p>
+      <button class="btn btn-sm btn-primary" style="margin-top:12px">完成交易</button>
+    </div>
+    <div class="card" style="flex:1">
+      <h3>数据一致性</h3>
+      <p style="margin:0;color:#4b5563;font-size:13px">
+        确认、删除其余预约、更新商品状态三步在同一事务内完成，不出现商品已确认但仍有两条有效预约的情况（REQ-023）。
+      </p>
+    </div>
+  </div>
+</div>
+</body></html>

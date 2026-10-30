@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<title>界面11 操作日志</title></head>
+<body>
+<div class="topbar">
+  <div class="logo">校园二手交易平台 · 管理后台</div>
+  <nav>
+    <a href="#">商品审核</a>
+    <a href="#">违规处置</a>
+    <a class="on" href="#">操作日志</a>
+    <a href="#">统计报表</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="who"><span class="avatar">管</span> 管理员</div>
+</div>
+
+<div class="wrap">
+  <h1>操作日志</h1>
+  <p class="sub">REQ-021 记录操作人、时间、对象、类型；日志不可修改，管理员可查询，卖家只能查与自己相关</p>
+
+  <div class="card" style="margin-bottom:18px">
+    <div class="row" style="align-items:flex-end">
+      <div class="field" style="flex:1;margin:0">
+        <label>时间范围</label>
+        <div class="row" style="gap:8px">
+          <input class="input" value="2026-10-20">
+          <span style="align-self:center;color:#9ca3af">—</span>
+          <input class="input" value="2026-10-27">
+        </div>
+      </div>
+      <div class="field" style="flex:1;margin:0">
+        <label>操作人</label>
+        <input class="input" placeholder="姓名 / 账号">
+      </div>
+      <div class="field" style="flex:1;margin:0">
+        <label>操作类型</label>
+        <select class="select">
+          <option>全部</option><option>提交审核</option><option>审核</option><option>下架</option>
+          <option>违规处置</option><option>封禁</option><option>解封</option>
+          <option>发起预约</option><option>取消预约</option><option>确认预约</option>
+          <option>预约记录删除</option><option>完成交易</option>
+        </select>
+      </div>
+      <div class="field" style="flex:1;margin:0">
+        <label>操作对象</label>
+        <input class="input" placeholder="商品 / 用户 / 预约编号">
+      </div>
+      <button class="btn btn-primary" style="height:38px">查询</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th style="width:150px">操作时间</th><th style="width:110px">操作人</th><th style="width:120px">操作类型</th><th>操作对象</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>2026-10-27 15:02</td><td>刘同学</td>
+          <td><span class="badge b-wait">发起预约</span></td>
+          <td>商品 P-1024 · 高等数学</td><td>发起购买意向</td>
+        </tr>
+        <tr>
+          <td>2026-10-27 15:10</td><td>钟同学</td>
+          <td><span class="badge b-ok">确认预约</span></td>
+          <td>预约 R-5580 · 商品 P-1024</td><td>确认陈同学的预约</td>
+        </tr>
+        <tr>
+          <td>2026-10-27 15:10</td><td>系统</td>
+          <td><span class="badge b-off">预约记录删除</span></td>
+          <td>预约 R-5581 · 商品 P-1024</td><td>卖家确认他人，该预约作废并删除记录</td>
+        </tr>
+        <tr>
+          <td>2026-10-27 14:22</td><td>钟同学</td>
+          <td><span class="badge b-pending">提交审核</span></td>
+          <td>商品 P-1024 · 高等数学</td><td>草稿提交审核</td>
+        </tr>
+        <tr>
+          <td>2026-10-27 14:40</td><td>管理员</td>
+          <td><span class="badge b-on">审核</span></td>
+          <td>商品 P-1024 · 高等数学</td><td>审核通过</td>
+        </tr>
+        <tr>
+          <td>2026-10-26 20:15</td><td>管理员</td>
+          <td><span class="badge b-reject">违规处置</span></td>
+          <td>商品 P-0998 · 代刷课</td><td>违规下架，理由：违反平台规定</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;font-size:13px;color:#6b7280">
+      <span>共 1,284 条记录</span>
+      <span><button class="btn btn-sm">上一页</button> <button class="btn btn-sm btn-primary">1</button> <button class="btn btn-sm">2</button> <button class="btn btn-sm">下一页</button></span>
+    </div>
+  </div>
+
+  <div class="note">日志不允许买家、卖家删除或篡改；删除预约记录时不得连带删除对应日志（REQ-021、REQ-023）</div>
+</div>
+</body></html>

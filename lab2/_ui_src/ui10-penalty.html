@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<title>界面10 违规处置与封禁</title>
+<style>
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.tabs a{padding:10px 16px;color:var(--muted);font-size:13px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a.on{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+.target{display:flex;gap:14px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:8px;margin-bottom:16px;background:#fafbfc}
+</style></head>
+<body>
+<div class="topbar">
+  <div class="logo">校园二手交易平台 · 管理后台</div>
+  <nav>
+    <a href="#">商品审核</a>
+    <a class="on" href="#">违规处置</a>
+    <a href="#">操作日志</a>
+    <a href="#">统计报表</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="who"><span class="avatar">管</span> 管理员</div>
+</div>
+
+<div class="wrap">
+  <h1>违规处置</h1>
+  <p class="sub">REQ-015 违规下架 · REQ-016 封禁账号（理由必填）· REQ-017 封禁提示</p>
+
+  <div class="tabs">
+    <a class="on" href="#">违规下架商品</a>
+    <a href="#">封禁账号</a>
+  </div>
+
+  <div class="card">
+    <div class="target">
+      <div style="width:64px;height:64px;border-radius:8px;background:linear-gradient(135deg,#eef2ff,#e0e7ff)"></div>
+      <div style="flex:1">
+        <div style="font-weight:700">高等数学 第七版 上下册（共两册）</div>
+        <div class="meta" style="margin-top:4px"><span>Seller：钟同学</span><span>25 元</span><span>教材</span></div>
+      </div>
+      <span class="badge b-on">已发布</span>
+    </div>
+
+    <div class="field">
+      <label class="req">处置理由</label>
+      <textarea class="input" rows="3">商品描述含校外联系方式，属于平台禁止的场外交易引导。</textarea>
+      <div class="hint">理由必填，随操作日志保存，事后可查（REQ-021）</div>
+    </div>
+
+    <div class="alert alert-warn" style="margin:0">
+      执行后的影响：
+      <br>· 商品状态变为 <span class="badge b-illegal">违规下架</span>，买家搜不到、约不了
+      <br>· 卖家不能再修改或重新上架，不能自行恢复
+      <br>· 该商品下所有待确认与已成功的<b>预约记录直接删除</b>（不可恢复）
+    </div>
+
+    <div style="margin-top:16px;display:flex;gap:12px">
+      <button class="btn btn-danger">确认违规下架</button>
+      <button class="btn">取消</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>封禁账号（另一个 Tab）</h3>
+    <div class="target">
+      <div class="avatar" style="width:36px;height:36px">钟</div>
+      <div style="flex:1">
+        <div style="font-weight:700">钟同学 · 学号 241220170</div>
+        <div class="meta" style="margin-top:4px"><span>当前状态：正常</span><span>当前权限：卖家</span></div>
+      </div>
+      <span class="badge b-on">正常</span>
+    </div>
+    <div class="field">
+      <label class="req">封禁理由</label>
+      <textarea class="input" rows="2">多次发布违规商品，且拒不整改。</textarea>
+    </div>
+    <div class="alert alert-danger" style="margin:0">
+      封禁后：账号不能登录、不能发布、不能发起或确认预约；名下已发布商品全部下架；
+      相关预约记录全部删除。该账号登录时将被拒绝，并显示<b>封禁原因</b>与<b>管理员联系方式</b>，由用户线下联系管理员（REQ-017）。
+    </div>
+    <div style="margin-top:16px;display:flex;gap:12px">
+      <button class="btn btn-danger">确认封禁</button>
+      <button class="btn">取消</button>
+    </div>
+  </div>
+</div>
+</body></html>
