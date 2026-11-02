@@ -1,0 +1,16 @@
+# 构建产物
+build/
+out/
+*.exe
+*.obj
+*.pdb
+*.ilk
+*.log
+
+# 数据库凭据（模板 db.ini.example 会进版本库）
+config/db.ini
+
+# 编辑器
+.vs/
+.vscode/
+*.user
