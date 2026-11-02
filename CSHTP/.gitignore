@@ -1,13 +1,14 @@
+复制
 # 构建产物
 build/
 out/
-*.exe
 *.obj
+*.exe
 *.pdb
 *.ilk
 *.log
 
-# 数据库凭据（模板 db.ini.example 会进版本库）
+# 数据库凭据
 config/db.ini
 
 # 编辑器

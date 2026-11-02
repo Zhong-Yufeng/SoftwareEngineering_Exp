@@ -1,8 +1,11 @@
-﻿AGENTS.md
-模板/
+
+lab1/
+lab2/
+lab3/
 课件/
-.tmp_final/
-.tmp_lib/
-.tmp_lib4/
-tmp_*
+
+*.pdf
+
 *.zip
+
+AGENTS.md
