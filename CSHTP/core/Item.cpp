@@ -44,5 +44,13 @@ std::optional<Item> Item::CreateDraft(const std::string& Title,
     Draft.PublishedAtMs = 0;
     Draft.SellerID = SellerID;
 
+    // 驳回理由此刻必须为空：不变式 (Status==Rejected) ⇔ RejectReason 有值，
+    // 草稿不是 Rejected，所以这里显式写成 nullopt，不依赖默认构造
+    Draft.RejectReason = std::nullopt;
+
+    // 预约上限默认 10（需求的上限）。卖家想收更少，在草稿/驳回阶段改这个字段，
+    // 范围 1~10 由 SubmitForReview 统一校验，不必在构造函数和编辑两处各写一遍。
+    Draft.MaxReservations = 10;
+
     return Draft;
 }
