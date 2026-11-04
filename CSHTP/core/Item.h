@@ -8,9 +8,13 @@
 // Item —— 商品
 //
 // 创建分两半：
-//   Item::CreateDraft  只挡「必然错误」，装配出一个草稿对象
+//   Item::CreateDraft  校验内容齐全，装配出一个草稿对象
 //   ItemStore::Save    负责分配 ItemID 并入库
-// 所以 CreateDraft 不产生 ID；草稿阶段描述、图片、交易方式允许留空。
+// 所以 CreateDraft 不产生 ID。
+//
+// 【「草稿」的含义】创建时内容就必须齐全，所以草稿不再是「内容不全的
+// 半成品」，而是「内容齐全、但还没提交审核」的商品。草稿与已发布之间
+// 差的不是完整度，而是管理员那一次审核。
 //
 // 【状态模型】4 个状态、5 条状态间的边 + 1 条删除出口，见 enums.h 的 ItemStatus 注释。
 // 商品类只负责回答一个问题：「我能不能从状态 A 走到状态 B」。
@@ -32,10 +36,12 @@ class Item
         Category ItemCategory;
         long long PriceCents;               // 价格，单位分
         Condition ItemCondition;
-        std::vector<std::string> Images;    // 图片，提交审核时才要求至少一张
-        std::string TradeMethod;            // 交易方式，如「校内面交」
+        std::vector<std::string> Images;    // 图片，创建时即要求至少一张
+        // 没有「交易方式」字段：平台只支持线下当面交易，不提供邮寄或担保。
+        // 它是一个常量而不是每件商品的属性，所以不该占一个字段。
         std::string TradeLocation;          // 交易地点
-        std::string Contact;                // 卖家联系方式，成交后展示给买家
+        std::string Contact;                // 卖家联系方式，仅卖家本人与
+                                            // 成交后的买家可见
         ItemStatus Status;                  // 创建时固定为 Draft
         long long PublishedAtMs;            // 审核通过时才写，此前为 0
         std::optional<std::string> RejectReason;  // 驳回理由，仅 Rejected 时有值
@@ -48,16 +54,26 @@ class Item
         // 商品类的变量
 
         // 商品类的构造函数
-        // 校验：标题非空、卖家非空、价格不为负；其余允许留空（草稿）。
+        // 创建即要求内容齐全（草稿只是「未提交审核」，不是「内容不全」）：
+        //   标题、描述、交易地点、联系方式非空；
+        //   分类与成色必须是枚举里的合法值（enum class 能被强转成非法数字）；
+        //   价格必须大于 0（单位分，整数，没有精度问题）；
+        //   图片至少一张，且路径不能是空串（防止用空串凑数）；
+        //   预约上限在 1~10 之间；
+        //   卖家编号非空。
+        // 以下字段不由调用方给出，在函数内固定：
+        //   ItemID 留空（存储层分配）、Status=Draft、PublishedAtMs=0、
+        //   RejectReason 与 ReviewLockedByID 为空。
         // 不合法返回 std::nullopt。
         static std::optional<Item> CreateDraft(const std::string& Title,
                                                const std::string& Description,
                                                Category ItemCategory,
                                                long long PriceCents,
                                                Condition ItemCondition,
-                                               const std::string& TradeMethod,
+                                               const std::vector<std::string>& Images,
                                                const std::string& TradeLocation,
                                                const std::string& Contact,
+                                               int MaxReservations,
                                                const std::string& SellerID);
         // 商品类的构造函数
 
@@ -75,8 +91,12 @@ class Item
 
         // 提交审核：Draft → PendingReview，Rejected → PendingReview
         // 前置：Status 为 Draft 或 Rejected；
-        //       标题、描述、交易方式、交易地点、联系方式均非空；
+        //       标题、描述、交易地点、联系方式均非空；
         //       Images 至少一张；MaxReservations 在 1~10 之间。
+        // 【为什么创建时已经校验过，这里还要再查一遍】字段是 public 的，
+        //   创建之后卖家在草稿/驳回阶段仍可能把图片清空、把标题改空。
+        //   创建函数管的是「第一次写下时是对的」，这里管的是「提交的那一刻
+        //   是对的」——它才是内容进入审核前的最后一道闸门。
         // 副作用：Status 置 PendingReview，并清空 RejectReason 与审核占用锁。
         // 【为什么必须清空理由】驳回理由的不变式是
         //      (Status == Rejected) ⇔ RejectReason 有值。

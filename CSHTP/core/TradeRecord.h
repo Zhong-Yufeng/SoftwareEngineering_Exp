@@ -40,7 +40,6 @@ class TradeRecord
         // —— 以下为成交那一刻的快照，不随之后的对象修改而变化 ——
         std::string ItemTitle;        // 商品标题
         long long PriceCents;         // 成交价，单位分
-        std::string TradeMethod;      // 交易方式
         std::string TradeLocation;    // 交易地点
         std::string SellerContact;    // 卖家联系方式
         std::string BuyerContact;     // 买家联系方式
