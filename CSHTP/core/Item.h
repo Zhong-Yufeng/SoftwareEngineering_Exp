@@ -12,7 +12,7 @@
 //   ItemStore::Save    负责分配 ItemID 并入库
 // 所以 CreateDraft 不产生 ID；草稿阶段描述、图片、交易方式允许留空。
 //
-// 【状态模型】4 个状态、5 条边，见 enums.h 的 ItemStatus 注释。
+// 【状态模型】4 个状态、5 条状态间的边 + 1 条删除出口，见 enums.h 的 ItemStatus 注释。
 // 商品类只负责回答一个问题：「我能不能从状态 A 走到状态 B」。
 // 它不负责回答「谁能看见我」——那需要知道浏览者是谁，而 Item 里没有、
 // 也不该有「浏览者」这个字段。可见性由文件末尾的自由函数 CanSeeItem 承担。
@@ -39,6 +39,10 @@ class Item
         ItemStatus Status;                  // 创建时固定为 Draft
         long long PublishedAtMs;            // 审核通过时才写，此前为 0
         std::optional<std::string> RejectReason;  // 驳回理由，仅 Rejected 时有值
+        // 审核占用锁：有值 = 正在被该管理员审核，nullopt = 没人审。
+        // 只有 PendingReview 期间才可能被锁；用 optional 而不是 bool，
+        // 因为「谁锁的」在排查「商品为什么撤不回」时是关键信息。
+        std::optional<std::string> ReviewLockedByID;
         int MaxReservations;                // 本商品最多接受几条预约，1~10，默认 10
         std::string SellerID;
         // 商品类的变量
@@ -58,7 +62,7 @@ class Item
         // 商品类的构造函数
 
         // ------------------------------------------------------------
-        // 状态迁移方法（4 个）
+        // 状态迁移方法（6 个）
         //
         // 统一口径：
         //   1. 只做「本对象能不能迁」的判断，不查库、不碰别的类；
@@ -73,22 +77,46 @@ class Item
         // 前置：Status 为 Draft 或 Rejected；
         //       标题、描述、交易方式、交易地点、联系方式均非空；
         //       Images 至少一张；MaxReservations 在 1~10 之间。
-        // 副作用：Status 置 PendingReview，并清空 RejectReason。
-        // 【为什么必须清空】驳回理由的不变式是
+        // 副作用：Status 置 PendingReview，并清空 RejectReason 与审核占用锁。
+        // 【为什么必须清空理由】驳回理由的不变式是
         //      (Status == Rejected) ⇔ RejectReason 有值。
         //   重提后若不清空，就会出现「待审核的商品挂着上一次的驳回理由」，
         //   违反不变式，之后 Approve 也会把这条陈旧理由带进已发布状态。
         bool SubmitForReview();
 
+        // 撤回审核：PendingReview → Draft
+        // 前置：Status 为 PendingReview，且当前没有管理员占用审核
+        //       （ReviewLockedByID 为空）。
+        // 副作用：Status 置 Draft，清空 RejectReason 与审核占用锁。
+        // 【为什么撤回的目标是草稿而不是删除】撤回的意图是「我还要改」，
+        //   草稿正好可编辑、也可再删；若撤回直接删除，卖家想改一个字就得重写。
+        // 【为什么被锁就不能撤】管理员正在看这份内容并准备下结论，此时内容
+        //   若回退成草稿并允许编辑，管理员批的就不是同一份东西了。锁定是
+        //   「审核期间内容冻结」这条规则的具体实现。
+        bool WithdrawReview();
+
+        // 管理员开始审核：给商品上锁
+        // 前置：Status 为 PendingReview，且当前未被占用；ReviewerID 非空。
+        // 副作用：ReviewLockedByID 置为 ReviewerID。
+        // 返回值 false 表示「已被别的管理员占用」，调用方据此提示「他人审核中」。
+        bool LockForReview(const std::string& ReviewerID);
+
+        // 管理员结束审核（放弃/取消审核，未下结论）时释放锁
+        // 前置：ReviewLockedByID 有值。
+        // 副作用：ReviewLockedByID 清空。
+        // 【注意】通过/驳回/撤回会自动释放锁，这三个方法内部不必再调它；
+        //   它是为「打开审核界面后中途关掉」这种没下结论的情况准备的。
+        bool ReleaseReview();
+
         // 审核通过：PendingReview → Published
         // 前置：Status 为 PendingReview。
-        // 副作用：Status 置 Published，PublishedAtMs 写为 NowMs。
+        // 副作用：Status 置 Published，PublishedAtMs 写为 NowMs，清空审核占用锁。
         // 时间由外部传入而不是在内部取 clock，是为了让测试能断言具体数值。
         bool Approve(long long NowMs);
 
         // 审核驳回：PendingReview → Rejected
         // 前置：Status 为 PendingReview，且 Reason 非空字符串。
-        // 副作用：Status 置 Rejected，RejectReason 置为 Reason。
+        // 副作用：Status 置 Rejected，RejectReason 置为 Reason，清空审核占用锁。
         // 【为什么理由必须非空】需求规定驳回时必须填理由；空串和「没填」在
         //   业务上没有区别，所以在这里直接把空串挡掉，不留给界面去校验。
         bool Reject(const std::string& Reason);
