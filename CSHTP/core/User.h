@@ -6,6 +6,8 @@
 
 class User
 {
+    private:
+        User() = default;
     public:
         // 用户类的变量
         std::string UserID;

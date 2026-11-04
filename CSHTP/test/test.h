@@ -36,3 +36,7 @@ namespace Test
 }
 
 void RunTests();
+
+// 各业务的测试入口，由 RunTests 统一调用
+void RunItemCreateTests();
+void RunItemStateTests();
