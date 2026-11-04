@@ -367,3 +367,38 @@ bool Item::AssignID(const std::string& NewID)
     ItemID = NewID;
     return true;
 }
+
+// ============================================================
+// 可见性
+// ============================================================
+bool Item::IsVisibleTo(Role ViewerRole, const std::string& ViewerID) const
+{
+    // 成员函数直接读私有字段，不必再走 Get*——Get* 是给类外准备的，
+    // 类内用自己人和用普通变量没有区别。
+    //
+    // 「是不是自己的商品」只能靠编号比较：角色上卖家与买家没有区别，
+    // 光看 Role 分不出「这是哪个卖家的商品」。
+    const bool IsOwner = (ViewerID == SellerID);
+
+    switch (Status)
+    {
+        case ItemStatus::Draft:
+        case ItemStatus::Rejected:
+            // 未提交审核的东西不该被任何人看见，管理员也一样——
+            // 审核的对象是「提交上来的稿子」，不是「卖家硬盘里的草稿」。
+            return IsOwner;
+
+        case ItemStatus::PendingReview:
+            // 卖家要能看到「审核中」，管理员要能看到才能审。
+            return IsOwner || ViewerRole == Role::Admin;
+
+        case ItemStatus::Published:
+            // 已发布对所有买家、所有卖家可见；管理员的职责在审核台，
+            // 不需要在商品列表里再看到一遍。
+            return ViewerRole != Role::Admin;
+    }
+
+    // 强转成非法枚举值时走到这里。枚举能被 static_cast 成任意整数，
+    // 所以兜底返回「不可见」比返回 true 安全。
+    return false;
+}

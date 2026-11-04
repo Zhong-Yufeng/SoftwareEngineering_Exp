@@ -211,4 +211,56 @@ void RunItemStateTests()
         Check(!I.AssignID("item-2"),                    "编号: 重复分配应被拒");
         Check(I.GetItemID() == "item-1",                "编号: 重复分配失败后编号不变");
     }
+
+    // ============ 9. 可见性：4 个状态 × 4 种视角 ============
+    // 规则表见 Item.h 中 IsVisibleTo 的注释，这里逐格验证。
+    // 「其他卖家」一列专门用来抓「只看角色不看编号」的实现错误：
+    // 它和「该卖家」的 Role 完全一样，只有编号不同。
+    {
+        Item I = *MakeDraft();
+
+        Check(I.IsVisibleTo(Role::Seller, "seller-1"),   "可见性/草稿: 该卖家可见");
+        Check(!I.IsVisibleTo(Role::Seller, "seller-2"),  "可见性/草稿: 其他卖家不可见");
+        Check(!I.IsVisibleTo(Role::Buyer, "buyer-1"),    "可见性/草稿: 买家不可见");
+        Check(!I.IsVisibleTo(Role::Admin, "admin-1"),    "可见性/草稿: 管理员不可见");
+    }
+    {
+        Item I = *MakeDraft();
+        I.SubmitForReview();
+
+        Check(I.IsVisibleTo(Role::Seller, "seller-1"),   "可见性/待审核: 该卖家可见");
+        Check(!I.IsVisibleTo(Role::Seller, "seller-2"),  "可见性/待审核: 其他卖家不可见");
+        Check(!I.IsVisibleTo(Role::Buyer, "buyer-1"),    "可见性/待审核: 买家不可见");
+        Check(I.IsVisibleTo(Role::Admin, "admin-1"),     "可见性/待审核: 管理员可见");
+    }
+    {
+        Item I = *MakeDraft();
+        I.SubmitForReview();
+        I.Reject("图片不清晰");
+
+        Check(I.IsVisibleTo(Role::Seller, "seller-1"),   "可见性/驳回: 该卖家可见");
+        Check(!I.IsVisibleTo(Role::Seller, "seller-2"),  "可见性/驳回: 其他卖家不可见");
+        Check(!I.IsVisibleTo(Role::Buyer, "buyer-1"),    "可见性/驳回: 买家不可见");
+        Check(!I.IsVisibleTo(Role::Admin, "admin-1"),    "可见性/驳回: 管理员不可见");
+    }
+    {
+        Item I = *MakeDraft();
+        I.SubmitForReview();
+        I.Approve(1000);
+
+        Check(I.IsVisibleTo(Role::Seller, "seller-1"),   "可见性/已发布: 该卖家可见");
+        Check(I.IsVisibleTo(Role::Seller, "seller-2"),   "可见性/已发布: 其他卖家可见");
+        Check(I.IsVisibleTo(Role::Buyer, "buyer-1"),     "可见性/已发布: 买家可见");
+        Check(!I.IsVisibleTo(Role::Admin, "admin-1"),    "可见性/已发布: 管理员不可见");
+    }
+
+    // 同一个人，状态变了结论也要跟着变。这条防的是「把可见性写成
+    // 与状态无关的常量」——只看第一组是发现不了这种错误的。
+    {
+        Item I = *MakeDraft();
+        Check(!I.IsVisibleTo(Role::Buyer, "buyer-1"),    "可见性/跨状态: 草稿对买家不可见");
+        I.SubmitForReview();
+        I.Approve(1000);
+        Check(I.IsVisibleTo(Role::Buyer, "buyer-1"),     "可见性/跨状态: 发布后对买家可见");
+    }
 }
