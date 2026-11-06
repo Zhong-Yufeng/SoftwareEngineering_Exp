@@ -55,6 +55,7 @@ class 商品 <<实体>> {
   - 最大预约数(MaxReservations) : Int 
   - 卖家ID(SellerID) : String 
   ==
+  + CreateDraft()       创建一个商品草稿
   + SubmitForReview()   从草稿/驳回转变成待审核
   + WithdrawReview()    从待审核转变成草稿
   + Approve()           从待审核转变成已发布
@@ -62,14 +63,12 @@ class 商品 <<实体>> {
 }
 
 class 预约 <<实体>> {
-  - 预约ID : String {PK}
-  - 发起时间 : DateTime
-  - 状态 : 预约状态
-  - 确认时间 : DateTime {可空}
+  - 预约ID(ReservationID): String {PK}
+  - 买家ID(BuyerID) : String
+  - 商品ID(ItemID) : String
+  - 创建时间(CreatedAtMs) : String
   ==
-  + 发起()
-  + 确认()
-  + 删除()
+  + Create() 创建一个预约
 }
 
 class 卖家认证申请 <<实体>> {
@@ -85,10 +84,13 @@ class 卖家认证申请 <<实体>> {
 }
 
 class 审核记录 <<实体>> {
-  - 记录ID : String {PK}
-  - 审核结果 : 审核结果
-  - 审核时间 : DateTime
-  - 理由 : String {可空}
+  - 记录ID(RecordID) : String {PK}
+  - 商品ID(ItemID) : String
+  - 审核员ID(ReviewerID) : String
+  - 审核结果(Result) : 审核结果
+  - 理由(Reason) : String {可空}
+  ==
+  + Create() 创建一个审核记录
 }
 
 class 操作日志 <<实体>> {

@@ -41,3 +41,5 @@ void RunTests();
 void RunItemCreateTests();
 void RunItemStateTests();
 void RunItemStoreTests();
+void RunReservationStoreTests();
+void RunAuditRecordTests();

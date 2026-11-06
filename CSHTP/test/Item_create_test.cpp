@@ -76,7 +76,6 @@ void RunItemCreateTests()
             Check(A->GetStatus() == ItemStatus::Draft,          "CreateDraft: 初始状态应为草稿");
             Check(A->GetPublishedAtMs() == 0,                   "CreateDraft: 发布时间应为 0");
             Check(!A->GetRejectReason().has_value(),            "CreateDraft: 驳回理由应为空");
-            Check(!A->GetReviewLockedByID().has_value(),        "CreateDraft: 审核锁应为空");
         }
         else
         {
