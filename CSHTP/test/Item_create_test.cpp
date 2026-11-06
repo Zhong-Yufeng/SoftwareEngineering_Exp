@@ -24,34 +24,18 @@ using Test::Check;
 
 namespace {
 
-std::vector<std::string> OneImage()
-{
-    return {"a.jpg"};
-}
-
-std::vector<std::string> NoImage()
-{
-    return {};
-}
-
-std::vector<std::string> BlankImage()
-{
-    return {""};
-}
-
 std::optional<Item> MakeItem(const std::string& Title = "高数教材",
                              const std::string& Description = "第七版，九成新",
                              Category ItemCategory = Category::Textbook,
                              long long PriceCents = 1500,
                              Condition ItemCondition = Condition::LikeNew,
-                             const std::vector<std::string>& Images = OneImage(),
                              const std::string& TradeLocation = "三食堂门口",
                              const std::string& Contact = "13800000000",
                              int MaxReservations = 3,
                              const std::string& SellerID = "seller-1")
 {
     return Item::CreateDraft(Title, Description, ItemCategory, PriceCents,
-                             ItemCondition, Images, TradeLocation, Contact,
+                             ItemCondition, TradeLocation, Contact,
                              MaxReservations, SellerID);
 }
 
@@ -80,8 +64,6 @@ void RunItemCreateTests()
             Check(A->GetContact() == "13800000000",  "CreateDraft: 联系方式应等于入参");
             Check(A->GetMaxReservations() == 3,      "CreateDraft: 预约上限应等于入参");
             Check(A->GetSellerID() == "seller-1",    "CreateDraft: 卖家应等于入参");
-            Check(A->GetImages().size() == 1 && A->GetImages()[0] == "a.jpg",
-                  "CreateDraft: 图片应被拷贝进来");
         }
     }
 
@@ -106,13 +88,13 @@ void RunItemCreateTests()
     Check(!MakeItem("").has_value(),                       "CreateDraft: 空标题应被拒");
     Check(!MakeItem("高数教材", "").has_value(),            "CreateDraft: 空描述应被拒");
     Check(!MakeItem("高数教材", "第七版", Category::Textbook, 1500,
-                    Condition::LikeNew, OneImage(), "", "13800000000")
+                    Condition::LikeNew, "", "13800000000")
                .has_value(),                               "CreateDraft: 空交易地点应被拒");
     Check(!MakeItem("高数教材", "第七版", Category::Textbook, 1500,
-                    Condition::LikeNew, OneImage(), "三食堂门口", "")
+                    Condition::LikeNew, "三食堂门口", "")
                .has_value(),                               "CreateDraft: 空联系方式应被拒");
     Check(!MakeItem("高数教材", "第七版", Category::Textbook, 1500,
-                    Condition::LikeNew, OneImage(), "三食堂门口", "13800000000", 3, "")
+                    Condition::LikeNew, "三食堂门口", "13800000000", 3, "")
                .has_value(),                               "CreateDraft: 空卖家应被拒");
 
     // ============ 5. 价格边界（单位分，整数比较）============
@@ -125,36 +107,21 @@ void RunItemCreateTests()
         Check(A.has_value(),                               "CreateDraft: 价格 1 分（边界值）应成功");
     }
 
-    // ============ 6. 图片 ============
+    // ============ 6. 预约上限边界 ============
     Check(!MakeItem("高数教材", "第七版", Category::Textbook, 1500,
-                    Condition::LikeNew, NoImage()).has_value(),
-          "CreateDraft: 一张图都没有，应被拒");
-    Check(!MakeItem("高数教材", "第七版", Category::Textbook, 1500,
-                    Condition::LikeNew, BlankImage()).has_value(),
-          "CreateDraft: 用空串凑数，应被拒");
-    {
-        auto Two = Item::CreateDraft("高数教材", "第七版", Category::Textbook, 1500,
-                                     Condition::LikeNew, {"a.jpg", "b.jpg"},
-                                     "三食堂门口", "13800000000", 3, "seller-1");
-        Check(Two.has_value() && Two->GetImages().size() == 2,
-              "CreateDraft: 多张图应全部保留");
-    }
-
-    // ============ 7. 预约上限边界 ============
-    Check(!MakeItem("高数教材", "第七版", Category::Textbook, 1500,
-                    Condition::LikeNew, OneImage(), "三食堂门口", "13800000000", 0)
+                    Condition::LikeNew, "三食堂门口", "13800000000", 0)
                .has_value(),                               "CreateDraft: 上限 0 应被拒");
     Check(!MakeItem("高数教材", "第七版", Category::Textbook, 1500,
-                    Condition::LikeNew, OneImage(), "三食堂门口", "13800000000", 11)
+                    Condition::LikeNew, "三食堂门口", "13800000000", 11)
                .has_value(),                               "CreateDraft: 上限 11 应被拒");
     {
         auto One = MakeItem("高数教材", "第七版", Category::Textbook, 1500,
-                            Condition::LikeNew, OneImage(), "三食堂门口", "13800000000", 1);
+                            Condition::LikeNew, "三食堂门口", "13800000000", 1);
         Check(One.has_value(),                             "CreateDraft: 上限 1（边界值）应成功");
     }
     {
         auto Ten = MakeItem("高数教材", "第七版", Category::Textbook, 1500,
-                            Condition::LikeNew, OneImage(), "三食堂门口", "13800000000", 10);
+                            Condition::LikeNew, "三食堂门口", "13800000000", 10);
         Check(Ten.has_value(),                             "CreateDraft: 上限 10（边界值）应成功");
     }
 

@@ -25,7 +25,7 @@ namespace {
 std::optional<Item> MakeDraft()
 {
     return Item::CreateDraft("高数教材", "第七版，九成新", Category::Textbook,
-                             1500, Condition::LikeNew, {"a.jpg"},
+                             1500, Condition::LikeNew,
                              "三食堂门口", "13800000000", 3, "seller-1");
 }
 

@@ -30,24 +30,6 @@ bool IsValidCondition(Condition ItemCondition)
     return false;
 }
 
-// 至少一张图，且不允许用空字符串凑数：
-// 只判 Images.empty() 的话，传入 {"", ""} 也能通过，那不是一张图。
-bool HasAtLeastOneImage(const std::vector<std::string>& Images)
-{
-    if (Images.empty())
-    {
-        return false;
-    }
-    for (const std::string& Path : Images)
-    {
-        if (Path.empty())
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
 }  // namespace
 
 // ============================================================
@@ -58,7 +40,6 @@ std::optional<Item> Item::CreateDraft(const std::string& Title,
                                       Category ItemCategory,
                                       long long PriceCents,
                                       Condition ItemCondition,
-                                      const std::vector<std::string>& Images,
                                       const std::string& TradeLocation,
                                       const std::string& Contact,
                                       int MaxReservations,
@@ -107,11 +88,6 @@ std::optional<Item> Item::CreateDraft(const std::string& Title,
         return std::nullopt;
     }
 
-    if (!HasAtLeastOneImage(Images))
-    {
-        return std::nullopt;
-    }
-
     // 预约上限：需求规定卖家可自己调，范围 1~10
     if (MaxReservations < 1 || MaxReservations > 10)
     {
@@ -130,7 +106,6 @@ std::optional<Item> Item::CreateDraft(const std::string& Title,
     Draft.ItemCategory = ItemCategory;
     Draft.PriceCents = PriceCents;
     Draft.ItemCondition = ItemCondition;
-    Draft.Images = Images;
     Draft.TradeLocation = TradeLocation;
     Draft.Contact = Contact;
     Draft.Status = ItemStatus::Draft;
@@ -141,10 +116,6 @@ std::optional<Item> Item::CreateDraft(const std::string& Title,
     // 驳回理由此刻必须为空：不变式 (Status==Rejected) ⇔ RejectReason 有值，
     // 草稿不是 Rejected，所以这里显式写成 nullopt，不依赖默认构造
     Draft.RejectReason = std::nullopt;
-
-    // 刚建的草稿没人审，锁必须是空的；否则「撤回」会被一个不存在的管理员
-    // 永久挡住。不变式：锁只有在 PendingReview 期间才可能非空。
-    Draft.ReviewLockedByID = std::nullopt;
 
     return Draft;
 }
@@ -158,7 +129,6 @@ const std::string& Item::GetDescription() const         { return Description; }
 Category Item::GetCategory() const                      { return ItemCategory; }
 long long Item::GetPriceCents() const                   { return PriceCents; }
 Condition Item::GetCondition() const                    { return ItemCondition; }
-const std::vector<std::string>& Item::GetImages() const { return Images; }
 const std::string& Item::GetTradeLocation() const       { return TradeLocation; }
 const std::string& Item::GetContact() const             { return Contact; }
 ItemStatus Item::GetStatus() const                      { return Status; }
@@ -166,10 +136,6 @@ long long Item::GetPublishedAtMs() const                { return PublishedAtMs; 
 const std::optional<std::string>& Item::GetRejectReason() const
 {
     return RejectReason;
-}
-const std::optional<std::string>& Item::GetReviewLockedByID() const
-{
-    return ReviewLockedByID;
 }
 int Item::GetMaxReservations() const                    { return MaxReservations; }
 const std::string& Item::GetSellerID() const            { return SellerID; }
@@ -202,10 +168,6 @@ bool Item::IsContentComplete() const
     {
         return false;
     }
-    if (!HasAtLeastOneImage(Images))
-    {
-        return false;
-    }
     if (MaxReservations < 1 || MaxReservations > 10)
     {
         return false;
@@ -227,21 +189,7 @@ bool Item::CanSubmitForReview() const
 
 bool Item::CanWithdrawReview() const
 {
-    // 不变式：锁有值 ⇒ 状态是待审核。所以待审核这一条其实被锁的部分
-    // 覆盖了一部分，但仍然要显式写，因为没锁的待审核商品也必须能撤回。
-    return Status == ItemStatus::PendingReview
-        && !ReviewLockedByID.has_value();
-}
-
-bool Item::CanLockForReview() const
-{
-    return Status == ItemStatus::PendingReview
-        && !ReviewLockedByID.has_value();
-}
-
-bool Item::CanReleaseReview() const
-{
-    return ReviewLockedByID.has_value();
+    return Status == ItemStatus::PendingReview;
 }
 
 bool Item::CanApprove() const
@@ -271,7 +219,7 @@ bool Item::CanReserve() const
 //   1. 检查（调上面的 Can*，必要时加参数检查）；
 //   2. 不通过就 return false，一个字段都还没碰；
 //   3. 通过后连续赋值，包括那些「必须跟着一起改」的副作用字段。
-// 副作用（清理由、清锁、写时间）之所以放在这里而不是让调用方自己做，
+// 副作用（清理由、写时间）之所以放在这里而不是让调用方自己做，
 // 是因为它们不是业务判断，而是这条边自带的后果；放外面就会被漏写。
 // ============================================================
 
@@ -284,7 +232,6 @@ bool Item::SubmitForReview()
 
     Status = ItemStatus::PendingReview;
     RejectReason = std::nullopt;        // 重提时清掉上一次的驳回理由
-    ReviewLockedByID = std::nullopt;    // 新的待审核还没人审
     return true;
 }
 
@@ -297,31 +244,6 @@ bool Item::WithdrawReview()
 
     Status = ItemStatus::Draft;
     RejectReason = std::nullopt;
-    ReviewLockedByID = std::nullopt;
-    return true;
-}
-
-bool Item::LockForReview(const std::string& ReviewerID)
-{
-    // 空字符串的审核人会在库里留下一条「不知道被谁锁住」的记录，
-    // 后期排查「为什么撤不回」时就断了线索，所以直接挡掉。
-    if (!CanLockForReview() || ReviewerID.empty())
-    {
-        return false;
-    }
-
-    ReviewLockedByID = ReviewerID;
-    return true;
-}
-
-bool Item::ReleaseReview()
-{
-    if (!CanReleaseReview())
-    {
-        return false;
-    }
-
-    ReviewLockedByID = std::nullopt;
     return true;
 }
 
@@ -334,7 +256,6 @@ bool Item::Approve(long long NowMs)
 
     Status = ItemStatus::Published;
     PublishedAtMs = NowMs;
-    ReviewLockedByID = std::nullopt;    // 结论已下，锁自动释放
     return true;
 }
 
@@ -347,7 +268,6 @@ bool Item::Reject(const std::string& Reason)
 
     Status = ItemStatus::Rejected;
     RejectReason = Reason;
-    ReviewLockedByID = std::nullopt;    // 结论已下，锁自动释放
     return true;
 }
 

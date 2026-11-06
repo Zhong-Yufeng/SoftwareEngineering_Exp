@@ -40,18 +40,16 @@ class Item
         //   标题、描述、交易地点、联系方式非空；
         //   分类与成色必须是枚举里的合法值（enum class 能被强转成非法数字）；
         //   价格必须大于 0（单位分，整数，没有精度问题）；
-        //   图片至少一张，且路径不能是空串（防止用空串凑数）；
         //   预约上限在 1~10 之间；卖家编号非空。
         // 以下字段不由调用方给出，在函数内固定：
         //   ItemID 留空（存储层分配）、Status=Draft、PublishedAtMs=0、
-        //   RejectReason 与 ReviewLockedByID 为空。
+        //   RejectReason 为空。
         // 不合法返回 std::nullopt。
         static std::optional<Item> CreateDraft(const std::string& Title,
                                                const std::string& Description,
                                                Category ItemCategory,
                                                long long PriceCents,
                                                Condition ItemCondition,
-                                               const std::vector<std::string>& Images,
                                                const std::string& TradeLocation,
                                                const std::string& Contact,
                                                int MaxReservations,
@@ -68,13 +66,11 @@ class Item
         Category GetCategory() const;
         long long GetPriceCents() const;
         Condition GetCondition() const;
-        const std::vector<std::string>& GetImages() const;
         const std::string& GetTradeLocation() const;
         const std::string& GetContact() const;
         ItemStatus GetStatus() const;
         long long GetPublishedAtMs() const;
         const std::optional<std::string>& GetRejectReason() const;
-        const std::optional<std::string>& GetReviewLockedByID() const;
         int GetMaxReservations() const;
         const std::string& GetSellerID() const;
 
@@ -99,15 +95,8 @@ class Item
         // 允许提交审核（只判状态）：草稿、驳回。
         bool CanSubmitForReview() const;
 
-        // 允许撤回审核：待审核，且当前没有管理员占用。
+        // 允许撤回审核：待审核。
         bool CanWithdrawReview() const;
-
-        // 允许上锁（管理员开始审核）：待审核，且当前没有管理员占用。
-        // 不判「谁在调」——审核人编号由 LockForReview 作为入参给出。
-        bool CanLockForReview() const;
-
-        // 允许解锁：当前有锁。
-        bool CanReleaseReview() const;
 
         // 允许审核通过：待审核。
         bool CanApprove() const;
@@ -159,7 +148,7 @@ class Item
 
         // 提交审核：Draft → PendingReview，Rejected → PendingReview
         // 前置：CanSubmitForReview() 且 IsContentComplete()。
-        // 副作用：清空 RejectReason 与审核锁。
+        // 副作用：清空 RejectReason。
         // 【为什么必须清空理由】不变式是 (Status==Rejected) ⇔ RejectReason
         //   有值。重提后不清空，就会出现「待审核的商品挂着上一次的驳回
         //   理由」，之后 Approve 还会把这条陈旧理由带进已发布状态。
@@ -167,33 +156,20 @@ class Item
 
         // 撤回审核：PendingReview → Draft
         // 前置：CanWithdrawReview()。
-        // 副作用：清空 RejectReason 与审核锁。
+        // 副作用：清空 RejectReason。
         // 【为什么撤回的目标是草稿而不是删除】撤回的意图是「我还要改」，
         //   草稿正好可编辑、也可再删；若撤回直接删除，卖家想改一个字就得重写。
-        // 【为什么被锁就不能撤】管理员正在看这份内容，此时允许改动或回退，
-        //   管理员批的就不是同一份东西了。锁 = 审核期间内容冻结。
         bool WithdrawReview();
-
-        // 管理员开始审核：PendingReview 期间上锁
-        // 前置：CanLockForReview() 且 ReviewerID 非空。
-        // 副作用：ReviewLockedByID 置为 ReviewerID。
-        // 返回 false 表示「已被别人占用」，调用方据此提示「他人审核中」。
-        bool LockForReview(const std::string& ReviewerID);
-
-        // 管理员放弃审核（中途关掉界面，未下结论）时释放锁
-        // 前置：CanReleaseReview()。
-        // 【注意】通过/驳回/撤回会自动释放锁，不必再调它。
-        bool ReleaseReview();
 
         // 审核通过：PendingReview → Published
         // 前置：CanApprove()。
-        // 副作用：PublishedAtMs 写为 NowMs，清空审核锁。
+        // 副作用：PublishedAtMs 写为 NowMs。
         // 时间由外部传入而不是内部读时钟，是为了让测试能断言具体数值。
         bool Approve(long long NowMs);
 
         // 审核驳回：PendingReview → Rejected
         // 前置：CanReject() 且 Reason 非空。
-        // 副作用：RejectReason 置为 Reason，清空审核锁。
+        // 副作用：RejectReason 置为 Reason。
         // 【为什么理由必须非空】需求规定驳回必须填理由；空串和「没填」在
         //   业务上没有区别，所以在这里挡掉，不留给界面去校验。
         bool Reject(const std::string& Reason);
@@ -211,25 +187,17 @@ class Item
         // 存储层要把商品拷进容器、成交记录要读它，这些都需要拷贝。
         Item() = default;
 
-        std::string ItemID;                 // 草稿阶段为空，由存储层分配
+        std::string ItemID;                 
         std::string Title;
         std::string Description;
         Category ItemCategory = Category::Textbook;
         long long PriceCents = 0;           // 价格，单位分
         Condition ItemCondition = Condition::BrandNew;
-        std::vector<std::string> Images;    // 图片，创建时即要求至少一张
-        // 没有「交易方式」字段：平台只支持线下当面交易，不提供邮寄或担保。
-        // 它是一个常量而不是每件商品的属性，所以不该占一个字段。
         std::string TradeLocation;          // 交易地点
-        std::string Contact;                // 卖家联系方式，仅卖家本人与
-                                            // 成交后的买家可见
+        std::string Contact;                // 卖家联系方式，仅卖家本人与成交后的买家可见
         ItemStatus Status = ItemStatus::Draft;
         long long PublishedAtMs = 0;        // 审核通过时才写，此前为 0
         std::optional<std::string> RejectReason;   // 驳回理由，仅 Rejected 时有值
-        // 审核占用锁：有值 = 正在被该管理员审核，nullopt = 没人审。
-        // 用 optional 而不是 bool，因为「谁锁的」在排查「商品为什么撤不回」
-        // 时是关键信息。
-        std::optional<std::string> ReviewLockedByID;
         int MaxReservations = 1;            // 本商品最多接受几条预约，1~10
         std::string SellerID;
 };

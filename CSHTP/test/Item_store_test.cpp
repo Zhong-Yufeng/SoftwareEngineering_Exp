@@ -24,12 +24,9 @@ namespace
                   const std::string& SellerID = "seller-1",
                   const std::string& TradeLocation = "图书馆门口")
     {
-        std::vector<std::string> Images;
-        Images.push_back("img/cover.jpg");
-
         // 参数全部合法，所以一定有值；value() 取出的是拷贝。
         const auto Built = Item::CreateDraft(Title, Description, Cat, PriceCents,
-                                             Cond, Images, TradeLocation,
+                                             Cond, TradeLocation,
                                              "13800000000", 3, SellerID);
         return Built.value();
     }

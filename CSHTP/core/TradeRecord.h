@@ -44,7 +44,6 @@ class TradeRecord
         std::string SellerContact;    // 卖家联系方式
         std::string BuyerContact;     // 买家联系方式
         // 成交记录类的变量
-
         // 成交记录类的构造函数
         // 直接拿「即将被删除的那件商品」当快照来源，而不是让调用方传 10 个参数：
         // 参数越少，越不容易把标题拷成描述、把卖家联系方式拷成买家的。
