@@ -43,3 +43,6 @@ void RunItemStateTests();
 void RunItemStoreTests();
 void RunReservationStoreTests();
 void RunAuditRecordTests();
+void RunTradeRecordTests();
+void RunSellerApplicationTests();
+void RunOperationLogTests();

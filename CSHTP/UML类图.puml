@@ -1,6 +1,7 @@
 @startuml UML类图
 ' 校园二手交易平台 —— 类图
 ' 依据：lab1/实验1_241220170_钟宇峰/requirements.md（REQ-001 ~ REQ-030）
+' 属性名与 CSHTP/core 下的 C++ 字段保持一致
 title 校园二手交易平台 类图
 
 skinparam classAttributeIconSize 0
@@ -9,16 +10,15 @@ skinparam packageStyle rectangle
 
 ' ============ 实体类 ============
 
-class 用户 <<实体>> {
-  - 用户ID : String {PK}
-  - 手机号 : String {唯一, 可空}
-  - 学号 : String {唯一, 可空}
-  - 密码 : String {密文, >=6位}
-  - 昵称 : String
-  - 联系方式 : String
-  - 账号状态 : 账号状态
-  - 封禁原因 : String {可空}
-  - 当前权限 : 当前权限
+class "User(用户)" as User <<实体>> {
+  - UserID(用户ID) : string {PK, 非空}
+  - UserPhone(手机号) : string {可空}
+  - UserStdNo(学号) : string {可空}
+  - Password(密码) : string {非空}
+  - Nickname(昵称) : string {非空}
+  - QQNo(联系方式) : string {非空}
+  - Status(账号状态) : AccountStatus {非空}
+  - Reason(封禁原因) : string {可空}
   ==
   + 修改密码()
   + 修改资料()
@@ -40,20 +40,20 @@ class 用户 <<实体>> {
   + 查看报表()
 }
 
-class 商品 <<实体>> {
-  - 商品ID(ItemID) : String {PK}
-  - 标题(Title) : String 
-  - 描述(Description) : String 
-  - 分类(ItemCategory) : 商品分类 
-  - 价格(PriceCents) : Decimal 
-  - 成色(ItemCondition) : 成色
-  - 交易地点(TradeLocation) : String 
-  - 联系方式(Contact) : String
-  - 当前状态(Status) : 商品状态 
-  - 发布时间(PublishedAtMs) : DateTime 
-  - 驳回理由(RejectReason) : String 
-  - 最大预约数(MaxReservations) : Int 
-  - 卖家ID(SellerID) : String 
+class "Item(商品)" as Item <<实体>> {
+  - ItemID(商品ID) : string {PK, 非空}
+  - Title(标题) : string {非空}
+  - Description(描述) : string {非空}
+  - ItemCategory(分类) : Category {非空}
+  - PriceCents(价格,分) : long long {非空}
+  - ItemCondition(成色) : Condition {非空}
+  - TradeLocation(交易地点) : string {非空}
+  - Contact(联系方式) : string {非空}
+  - Status(当前状态) : ItemStatus {非空}
+  - PublishedAtMs(发布时间) : long long {非空}
+  - RejectReason(驳回理由) : string {可空}
+  - MaxReservations(最大预约数) : int {非空}
+  - SellerID(卖家ID) : string {非空}
   ==
   + CreateDraft()       创建一个商品草稿
   + SubmitForReview()   从草稿/驳回转变成待审核
@@ -62,144 +62,148 @@ class 商品 <<实体>> {
   + Reject()            从待审核转变成驳回
 }
 
-class 预约 <<实体>> {
-  - 预约ID(ReservationID): String {PK}
-  - 买家ID(BuyerID) : String
-  - 商品ID(ItemID) : String
-  - 创建时间(CreatedAtMs) : String
+class "Reservation(预约)" as Reservation <<实体>> {
+  - ReservationID(预约ID) : string {PK, 非空}
+  - BuyerID(买家ID) : string {非空}
+  - ItemID(商品ID) : string {非空}
+  - CreatedAtMs(创建时间) : long long {非空}
   ==
   + Create() 创建一个预约
 }
 
-class 卖家认证申请 <<实体>> {
-  - 申请ID : String {PK}
-  - 姓名 : String
-  - 提交时间 : DateTime
-  - 审核状态 : 认证审核状态
-  - 审核时间 : DateTime {可空}
-  - 驳回理由 : String {可空}
+class "TradeRecord(交易记录)" as TradeRecord <<实体>> {
+  - TradeID(成交记录ID) : string {PK, 非空}
+  - ItemID(商品ID) : string {非空}
+  - BuyerID(买家ID) : string {非空}
+  - SellerID(卖家ID) : string {非空}
+  - TradedAtMs(成交时间) : long long {非空}
+  - ItemTitle(商品标题) : string {非空}
+  - PriceCents(成交价,分) : long long {非空}
+  - TradeLocation(交易地点) : string {非空}
+  - SellerContact(卖家联系方式) : string {非空}
+  - BuyerContact(买家联系方式) : string {非空}
   ==
-  + 提交()
-  + 审核()
+  + Create()          由商品与买家信息生成成交记录
+  + IsParticipant()   判断某人是否为本单买家或卖家
 }
 
-class 审核记录 <<实体>> {
-  - 记录ID(RecordID) : String {PK}
-  - 商品ID(ItemID) : String
-  - 审核员ID(ReviewerID) : String
-  - 审核结果(Result) : 审核结果
-  - 理由(Reason) : String {可空}
+class "SellerApplication(卖家认证申请)" as SellerApplication <<实体>> {
+  - ApplicationID(申请ID) : string {PK, 非空}
+  - ApplicantID(申请人ID) : string {非空}
+  - RealName(真实姓名) : string {非空}
+  - AuditStatus(审核状态) : ApplicationStatus {非空}
+  - SubmittedAtMs(提交时间) : long long {非空}
+  - AuditedAtMs(审核时间) : long long {可空}
+  - RejectReason(驳回理由) : string {可空}
+  - ReviewerID(审核人ID) : string {可空}
+  ==
+  + Create()    创建一张待审核的申请（编号由存储层分配）
+  + Approve()   PendingReview → Approved（审核通过）
+  + Reject()    PendingReview → Rejected（审核驳回，必须填理由）
+}
+
+class "AuditRecord(审核记录)" as AuditRecord <<实体>> {
+  - RecordID(记录ID) : string {PK, 非空}
+  - ItemID(商品ID) : string {非空}
+  - ReviewerID(审核员ID) : string {非空}
+  - Result(审核结果) : AuditResult {非空}
+  - AuditedAtMs(审核时间) : long long {非空}
+  - Reason(理由) : string {可空}
   ==
   + Create() 创建一个审核记录
 }
 
-class 操作日志 <<实体>> {
-  - 日志ID : String {PK}
-  - 操作时间 : DateTime
-  - 操作类型 : 日志类型
-  - 对象类型 : String
-  - 对象ID : String
-  - 说明 : String {可空}
+class "OperationLog(操作日志)" as OperationLog <<实体>> {
+  - LogID(日志ID) : string {PK, 非空}
+  - Type(操作类型) : LogType {非空}
+  - OperatedAtMs(操作时间) : long long {非空}
+  - Content(日志内容) : string {非空}
   ==
-  + 查询()
+  + CreateRegister()      注册：用户[用户ID]在[时间]注册了账号
+  + CreateItemSold()      成交：买家[买家ID]和卖家[卖家ID]在[时间]成功交易[商品ID]+[商品名称]
+  + CreateItemAudit()     商品审核：管理员[管理员ID]在[时间]审核[通过/驳回]了卖家[卖家ID]的商品[商品ID]+[商品名称]
+  + CreateSellerAudit()   卖家审核：管理员[管理员ID]在[时间]审核[通过/驳回]了用户[用户ID]的卖家申请
 }
 
 ' ============ 枚举 ============
 
-enum 账号状态 {
-  正常
-  已封禁
+enum "AccountStatus(账号状态)" as AccountStatus {
+  Normal   正常
+  Banned   已封禁 {只影响卖家权限}
 }
 
-enum 当前权限 {
-  买家
-  卖家
-  管理员
+enum "Role(当前权限)" as Role {
+  Buyer     买家
+  Seller    卖家
+  Admin     管理员
 }
 
-enum 商品状态 {
-  草稿
-  待审核
-  驳回
-  已发布
-  已确认
-  已下架
-  违规下架
-  交易完成
+enum "ItemStatus(商品状态)" as ItemStatus {
+  Draft           草稿
+  PendingReview   待审核
+  Rejected        驳回
+  Published       已发布
 }
 
-enum 预约状态 {
-  待确认
-  已成功
+enum "ApplicationStatus(认证审核状态)" as ApplicationStatus {
+  PendingReview   待审核
+  Approved        通过
+  Rejected        驳回
 }
 
-enum 认证审核状态 {
-  待审核
-  通过
-  驳回
+enum "AuditResult(审核结果)" as AuditResult {
+  Approved   通过
+  Rejected   驳回
 }
 
-enum 审核结果 {
-  通过
-  驳回
+enum "Category(商品分类)" as Category {
+  Textbook      教材
+  Digital       数码
+  Clothing      服饰
+  DailyGoods    生活用品
 }
 
-enum 商品分类 {
-  教材
-  数码
-  服饰
-  生活用品
+enum "Condition(成色)" as Condition {
+  BrandNew   全新
+  LikeNew    九成新
+  Flawed     有瑕疵
 }
 
-enum 成色 {
-  全新
-  九成新
-  有瑕疵
-}
-
-enum 日志类型 {
-  注册
-  提交审核
-  审核
-  下架
-  违规处置
-  封禁
-  解封
-  发起预约
-  取消预约
-  确认预约
-  预约记录删除
-  完成交易
+enum "LogType(日志类型)" as LogType {
+  Register          注册
+  ItemSold          商品成交
+  ItemAudited       商品审核
+  SellerAudited     卖家申请审核
 }
 
 ' ============ 关联关系 ============
 
-用户 "1" -- "0..*" 商品 : 发布者 >
-用户 "1" -- "0..*" 预约 : 买家 >
-商品 "1" -- "0..*" 预约 : 被预约 >
-用户 "1" -- "0..*" 卖家认证申请 : 申请人 >
-用户 "1" -- "0..*" 卖家认证申请 : 审核人 >
-商品 "1" -- "0..*" 审核记录 : 被审核 >
-用户 "1" -- "0..*" 审核记录 : 审核人 >
-用户 "1" -- "0..*" 操作日志 : 操作人 >
+User "1" -- "0..*" Item : 发布者 >
+User "1" -- "0..*" Reservation : 买家 >
+Item "1" -- "0..*" Reservation : 被预约 >
+User "1" -- "0..*" SellerApplication : 申请人 >
+User "1" -- "0..*" SellerApplication : 审核人 >
+Item "1" -- "0..*" AuditRecord : 被审核 >
+User "1" -- "0..*" AuditRecord : 审核人 >
+User "1" -- "0..*" OperationLog : 操作人 >
 
 ' ============ 约束 ============
 
-note right of 预约
+note right of Reservation
   {OCL}
   同一商品中 状态=已成功 的预约数量 <= 1
   （REQ-019 / REQ-023）
   失效 = 删除记录，不保留状态值
 end note
 
-note bottom of 商品
+note bottom of Item
   {OCL}
   当前状态=已确认 => 存在且仅存在一条 已成功 预约
   当前状态=交易完成 => 不可再发起或确认预约
   （REQ-012 / REQ-023 / REQ-029）
 end note
 
-note right of 用户
+note right of User
   {OCL}
   手机号 <> 空 或 学号 <> 空
   昵称、联系方式必填（REQ-001）
@@ -207,13 +211,13 @@ note right of 用户
   管理员不在层级内，不参与买卖
 end note
 
-note right of 操作日志
-  对象类型/对象ID 构成多态关联，
-  可指向 用户 / 商品 / 预约 / 卖家认证申请
+note right of OperationLog
+  四种内容句式在对应的 Create 中生成，
+  查询靠 Content 关键词匹配与时间范围
   （日志不可修改，REQ-021）
 end note
 
-note top of 用户
+note top of User
   封禁账号登录时展示 封禁原因 + 管理员联系方式（REQ-016）
   管理员联系方式与封禁提示文案属部署配置项，不进领域模型
 end note

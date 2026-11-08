@@ -37,4 +37,10 @@ class Reservation
                                                  const std::string& ItemID,
                                                  long long CreatedAtMs);
         // 预约类的构造函数
+
+    private:
+        // 默认构造函数私有：预约对象只能由 Create 造出来。
+        // 拷贝构造仍由编译器隐式生成且公开，这是有意保留的：
+        // 存储层要把预约拷进容器，查询也要返回拷贝。
+        Reservation() = default;
 };

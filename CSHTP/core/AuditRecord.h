@@ -36,4 +36,10 @@ class AuditRecord
                                                  AuditResult Result,
                                                  long long AuditedAtMs,
                                                  const std::string& Reason);
+
+    private:
+        // 默认构造函数私有：审核记录只能由 Create 造出来。
+        // 拷贝构造仍由编译器隐式生成且公开，这是有意保留的：
+        // 存储层要把记录拷进容器，查询也要返回拷贝。
+        AuditRecord() = default;
 };

@@ -39,6 +39,33 @@ std::optional<User> User::create(const std::string& UserID,
     U.Nickname = Nickname;
     U.QQNo = QQNo;
     U.Status = AccountStatus::Normal;
+    // 注册出来的一律是买家；卖家由申请审核通过后提权，管理员走 createAdmin
+    U.UserRole = Role::Buyer;
 
     return U;
+}
+
+std::optional<User> User::createAdmin(const std::string& AdminID,
+                                      const std::string& Password,
+                                      const std::string& Nickname)
+{
+    // 管理员没有真实资料，编号就是全部标识，所以编号不能为空
+    if (AdminID.empty() || Nickname.empty() || Password.size() < 6)
+    {
+        return std::nullopt;
+    }
+
+    User Admin;
+    Admin.UserID = AdminID;
+    // 手机号、学号、联系方式统一填管理员编号：登录按手机号/学号查都能命中，
+    // 也不占用真实的手机号、学号位置
+    Admin.UserPhone = AdminID;
+    Admin.UserStdNo = AdminID;
+    Admin.Password = Password;
+    Admin.Nickname = Nickname;
+    Admin.QQNo = AdminID;
+    Admin.Status = AccountStatus::Normal;
+    Admin.UserRole = Role::Admin;
+
+    return Admin;
 }

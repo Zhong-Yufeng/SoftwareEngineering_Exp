@@ -18,6 +18,7 @@ class User
         std::string QQNo;
         AccountStatus Status = AccountStatus::Normal;
         std::optional<std::string> Reason;
+        Role UserRole = Role::Buyer;
         // 用户类的变量
 
         // 用户类的构造函数
@@ -27,6 +28,12 @@ class User
                                  const std::string& Password,
                                  const std::string& Nickname,
                                  const std::string& QQNo);
+
+        // 只给后台预置管理员用：管理员没有真实学号和手机号，
+        // 手机号、学号、联系方式统一填管理员编号，编号从 "1" 开始由 main 维护
+        static std::optional<User> createAdmin(const std::string& AdminID,
+                                               const std::string& Password,
+                                               const std::string& Nickname);
         // 用户类的构造函数
 
         //  用户类的方法
