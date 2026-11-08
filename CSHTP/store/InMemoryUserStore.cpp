@@ -20,6 +20,11 @@ std::optional<User> InMemoryUserStore::FindByPhone(const std::string& UserPhone)
 {
     for (const auto& Pair : Users)
     {
+        // 管理员账号不参与按手机号/学号的查找，避免普通注册或登录命中管理员
+        if (Pair.second.UserRole == Role::Admin)
+        {
+            continue;
+        }
         if (Pair.second.UserPhone == UserPhone)
         {
             return Pair.second;
@@ -32,6 +37,10 @@ std::optional<User> InMemoryUserStore::FindByStdNo(const std::string& UserStdNo)
 {
     for (const auto& Pair : Users)
     {
+        if (Pair.second.UserRole == Role::Admin)
+        {
+            continue;
+        }
         if (Pair.second.UserStdNo == UserStdNo)
         {
             return Pair.second;
