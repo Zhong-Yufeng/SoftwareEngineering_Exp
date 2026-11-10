@@ -69,3 +69,41 @@ std::optional<User> User::createAdmin(const std::string& AdminID,
 
     return Admin;
 }
+
+bool User::BecomeSeller()
+{
+    // 只有买家能提权；卖家与管理员都不动
+    if (UserRole != Role::Buyer)
+    {
+        return false;
+    }
+
+    UserRole = Role::Seller;
+    return true;
+}
+
+bool User::Ban(const std::string& Reason)
+{
+    // 只有正常账号能被封禁，理由必填（界面要展示给被封禁的人看）
+    if (Status != AccountStatus::Normal || Reason.empty())
+    {
+        return false;
+    }
+
+    Status = AccountStatus::Banned;
+    this->Reason = Reason;
+    return true;
+}
+
+bool User::Unban()
+{
+    // 只有已封禁的账号需要解封
+    if (Status != AccountStatus::Banned)
+    {
+        return false;
+    }
+
+    Status = AccountStatus::Normal;
+    this->Reason.reset();
+    return true;
+}

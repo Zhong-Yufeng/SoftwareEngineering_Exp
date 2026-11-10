@@ -19,25 +19,13 @@ class "User(用户)" as User <<实体>> {
   - QQNo(联系方式) : string {非空}
   - Status(账号状态) : AccountStatus {非空}
   - Reason(封禁原因) : string {可空}
+  - UserRole(当前权限) : Role {非空}
   ==
-  + 修改密码()
-  + 修改资料()
-  + 申请卖家()
-  + 查询商品()
-  + 发起预约()
-  + 取消预约()
-  + 建草稿()
-  + 提交审核()
-  + 修改自己商品()
-  + 下架()
-  + 确认预约()
-  + 完成交易()
-  + 审核商品()
-  + 违规下架()
-  + 封禁()
-  + 解封()
-  + 查询日志()
-  + 查看报表()
+  + create()          创建买家账号（手机号/学号二选一，密码不少于 6 位）
+  + createAdmin()     预置管理员账号（手机号/学号/联系方式填管理员编号）
+  + BecomeSeller()    从买家转变成卖家（管理员审核通过后调用）
+  + Ban()             从正常转变成已封禁（理由必填）
+  + Unban()           从已封禁转变成正常（清空封禁理由）
 }
 
 class "Item(商品)" as Item <<实体>> {
@@ -187,39 +175,5 @@ Item "1" -- "0..*" AuditRecord : 被审核 >
 User "1" -- "0..*" AuditRecord : 审核人 >
 User "1" -- "0..*" OperationLog : 操作人 >
 
-' ============ 约束 ============
-
-note right of Reservation
-  {OCL}
-  同一商品中 状态=已成功 的预约数量 <= 1
-  （REQ-019 / REQ-023）
-  失效 = 删除记录，不保留状态值
-end note
-
-note bottom of Item
-  {OCL}
-  当前状态=已确认 => 存在且仅存在一条 已成功 预约
-  当前状态=交易完成 => 不可再发起或确认预约
-  （REQ-012 / REQ-023 / REQ-029）
-end note
-
-note right of User
-  {OCL}
-  手机号 <> 空 或 学号 <> 空
-  昵称、联系方式必填（REQ-001）
-  卖家权限 = 买家权限的超集
-  管理员不在层级内，不参与买卖
-end note
-
-note right of OperationLog
-  四种内容句式在对应的 Create 中生成，
-  查询靠 Content 关键词匹配与时间范围
-  （日志不可修改，REQ-021）
-end note
-
-note top of User
-  封禁账号登录时展示 封禁原因 + 管理员联系方式（REQ-016）
-  管理员联系方式与封禁提示文案属部署配置项，不进领域模型
-end note
 
 @enduml

@@ -34,33 +34,15 @@ class User
         static std::optional<User> createAdmin(const std::string& AdminID,
                                                const std::string& Password,
                                                const std::string& Nickname);
-        // 用户类的构造函数
 
-        //  用户类的方法
-        
-            //基础功能
-            bool ChangePassword(const std::string NewPassWord);
-            //基础功能
+        // 用户类的方法
 
-            //买家功能
-            bool SearchProducts();
-            bool MakeAppointment();
-            bool CancelAppointment();
-            bool ApplyToSeller();
-            //买家功能
+            //状态转变：只写自己的字段，能不能转、由谁触发由调用方保证
+            bool BecomeSeller();                    // 买家 → 卖家（管理员审核通过后调用）
+            bool Ban(const std::string& Reason);    // 正常 → 已封禁，理由必填
+            bool Unban();                           // 已封禁 → 正常，清空封禁理由
+            //状态转变
 
-            //卖家功能
-            bool CreateDraft();
-            bool SubmitDraft();
-            bool ConfirmAppointment();
-            //卖家功能
+        // 用户类的方法
 
-            //管理员功能
-            bool ReviewDraft();
-            bool BanDraft();
-            bool PassDraft();
-            bool BanUser();
-            bool UnbanUser();
-            //管理员功能
-        // 用户的方法
 };
