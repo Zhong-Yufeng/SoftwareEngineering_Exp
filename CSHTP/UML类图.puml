@@ -1,8 +1,8 @@
 @startuml UML类图
-' 校园二手交易平台 —— 类图
-' 依据：lab1/实验1_241220170_钟宇峰/requirements.md（REQ-001 ~ REQ-030）
+' 校园二手交易平台 —— core 实现类图
+' 依据：实验2 类图/状态图 + CSHTP/core 当前实现
 ' 属性名与 CSHTP/core 下的 C++ 字段保持一致
-title 校园二手交易平台 类图
+title 校园二手交易平台 类图（core 实现）
 
 skinparam classAttributeIconSize 0
 hide circle
@@ -11,113 +11,131 @@ skinparam packageStyle rectangle
 ' ============ 实体类 ============
 
 class "User(用户)" as User <<实体>> {
-  - UserID(用户ID) : string {PK, 非空}
-  - UserPhone(手机号) : string {可空}
-  - UserStdNo(学号) : string {可空}
-  - Password(密码) : string {非空}
-  - Nickname(昵称) : string {非空}
-  - QQNo(联系方式) : string {非空}
-  - Status(账号状态) : AccountStatus {非空}
-  - Reason(封禁原因) : string {可空}
-  - UserRole(当前权限) : Role {非空}
+  + UserID(用户ID) : string {PK, 非空}
+  + UserPhone(手机号) : string {可空}
+  + UserStdNo(学号) : string {可空}
+  + Password(密码) : string {非空, 密文}
+  + Nickname(昵称) : string {非空}
+  + QQNo(联系方式) : string {非空}
+  + Status(账号状态) : AccountStatus {非空}
+  + Reason(封禁原因) : string {可空}
+  + UserRole(当前权限) : Role {非空}
   ==
-  + create()          创建买家账号（手机号/学号二选一，密码不少于 6 位）
-  + createAdmin()     预置管理员账号（手机号/学号/联系方式填管理员编号）
-  + BecomeSeller()    从买家转变成卖家（管理员审核通过后调用）
-  + Ban()             从正常转变成已封禁（理由必填）
-  + Unban()           从已封禁转变成正常（清空封禁理由）
+  + create()          创建买家账号（手机号/学号二选一，密码不少于 6 位，编号由存储层分配）
+  + createAdmin()     预置管理员账号（编号同时占手机号/学号/联系方式）
+  + ChangePassword()  校验旧密码，新密码不少于 6 位（暂不实现）
+  + UpdateProfile()   修改昵称与联系方式（暂不实现）
+  + BecomeSeller()    买家 → 卖家（认证通过后调用）
+  + Ban()             正常 → 已封禁（理由必填）
+  + Unban()           已封禁 → 正常（清空封禁理由）
+  + AssignID()        由存储层写入编号（暂不实现）
 }
 
 class "Item(商品)" as Item <<实体>> {
-  - ItemID(商品ID) : string {PK, 非空}
-  - Title(标题) : string {非空}
-  - Description(描述) : string {非空}
-  - ItemCategory(分类) : Category {非空}
-  - PriceCents(价格,分) : long long {非空}
-  - ItemCondition(成色) : Condition {非空}
-  - TradeLocation(交易地点) : string {非空}
-  - Contact(联系方式) : string {非空}
-  - Status(当前状态) : ItemStatus {非空}
-  - PublishedAtMs(发布时间) : long long {非空}
-  - RejectReason(驳回理由) : string {可空}
-  - MaxReservations(最大预约数) : int {非空}
-  - SellerID(卖家ID) : string {非空}
+  + ItemID(商品ID) : string {PK, 非空}
+  + Title(标题) : string {非空}
+  + Description(描述) : string {非空}
+  + ItemCategory(分类) : Category {非空}
+  + PriceCents(价格,分) : long long {非空}
+  + ItemCondition(成色) : Condition {非空}
+  + TradeLocation(交易地点) : string {非空}
+  + Contact(联系方式) : string {非空}
+  + Status(当前状态) : ItemStatus {非空}
+  + PublishedAtMs(发布时间) : long long {非空}
+  + RejectReason(驳回理由) : string {可空}
+  + SellerID(卖家ID) : string {非空}
   ==
-  + CreateDraft()       创建一个商品草稿
-  + SubmitForReview()   从草稿/驳回转变成待审核
-  + WithdrawReview()    从待审核转变成草稿
-  + Approve()           从待审核转变成已发布
-  + Reject()            从待审核转变成驳回
+  + CreateDraft()          创建商品草稿（编号由存储层分配）
+  + IsContentComplete()    判断标题/描述/分类/价格/成色/交易地点/联系方式是否完整
+  + IsVisibleTo()          按角色与归属判断商品是否可见
+  + Modify()               草稿/驳回 → 更新内容（暂不实现）
+  + SubmitForReview()      草稿/驳回 → 待审核（内容须完整）
+  + Approve()              待审核 → 已发布（记录发布时间）
+  + Reject()               待审核 → 驳回（理由必填）
+  + Confirm()              已发布 → 已确认（交易中）
+  + OffShelf()             已发布/已确认 → 已下架（暂不实现）
+  + ViolationOffShelf()    已发布/已确认 → 违规下架（暂不实现）
+  + CompleteTrade()        已确认 → 交易完成
 }
 
 class "Reservation(预约)" as Reservation <<实体>> {
-  - ReservationID(预约ID) : string {PK, 非空}
-  - BuyerID(买家ID) : string {非空}
-  - ItemID(商品ID) : string {非空}
-  - CreatedAtMs(创建时间) : long long {非空}
+  + ReservationID(预约ID) : string {PK, 非空}
+  + BuyerID(买家ID) : string {非空}
+  + ItemID(商品ID) : string {非空}
+  + CreatedAtMs(创建时间) : long long {非空}
+  + Status(预约状态) : ReservationStatus {非空}
+  + ConfirmedAtMs(确认时间) : long long {可空}
   ==
-  + Create() 创建一个预约
+  + Create()   创建预约（初始为待确认，编号由存储层分配）
+  + Confirm()  待确认 → 已成功（记录确认时间）
 }
 
 class "TradeRecord(交易记录)" as TradeRecord <<实体>> {
-  - TradeID(成交记录ID) : string {PK, 非空}
-  - ItemID(商品ID) : string {非空}
-  - BuyerID(买家ID) : string {非空}
-  - SellerID(卖家ID) : string {非空}
-  - TradedAtMs(成交时间) : long long {非空}
-  - ItemTitle(商品标题) : string {非空}
-  - PriceCents(成交价,分) : long long {非空}
-  - TradeLocation(交易地点) : string {非空}
-  - SellerContact(卖家联系方式) : string {非空}
-  - BuyerContact(买家联系方式) : string {非空}
+  + TradeID(交易记录ID) : string {PK, 非空}
+  + ReservationID(预约ID) : string {非空}
+  + ItemID(商品ID) : string {非空}
+  + BuyerID(买家ID) : string {非空}
+  + SellerID(卖家ID) : string {非空}
+  + Status(记录状态) : TradeStatus {非空}
+  + CreatedAtMs(生成时间) : long long {非空}
+  + CompletedAtMs(完成时间) : long long {未完成时为 0}
+  + CancelledAtMs(作废时间) : long long {未作废时为 0}
+  + CancelReason(作废原因) : string {可空}
+  + ItemTitle(商品标题) : string {非空}
+  + PriceCents(确认时价格,分) : long long {非空}
+  + TradeLocation(交易地点) : string {非空}
+  + SellerContact(卖家联系方式) : string {非空}
+  + BuyerContact(买家联系方式) : string {非空}
   ==
-  + Create()          由商品与买家信息生成成交记录
-  + IsParticipant()   判断某人是否为本单买家或卖家
+  + Create()         卖家确认预约时生成，初始为「进行中」，快照标题/价格/联系方式
+  + Complete()       进行中 → 已完成（记录完成时间）
+  + Cancel()         进行中 → 已作废（原因必填；已完成不可作废）
+  + IsParticipant()  判断某人是否为该笔交易的买家或卖家
 }
 
 class "SellerApplication(卖家认证申请)" as SellerApplication <<实体>> {
-  - ApplicationID(申请ID) : string {PK, 非空}
-  - ApplicantID(申请人ID) : string {非空}
-  - RealName(真实姓名) : string {非空}
-  - AuditStatus(审核状态) : ApplicationStatus {非空}
-  - SubmittedAtMs(提交时间) : long long {非空}
-  - AuditedAtMs(审核时间) : long long {可空}
-  - RejectReason(驳回理由) : string {可空}
-  - ReviewerID(审核人ID) : string {可空}
+  + ApplicationID(申请ID) : string {PK, 非空}
+  + ApplicantID(申请人ID) : string {非空}
+  + RealName(真实姓名) : string {非空}
+  + AuditStatus(审核状态) : ApplicationStatus {非空}
+  + SubmittedAtMs(提交时间) : long long {非空}
+  + AuditedAtMs(审核时间) : long long {可空}
+  + RejectReason(驳回理由) : string {可空}
+  + ReviewerID(审核人ID) : string {可空}
   ==
-  + Create()    创建一张待审核的申请（编号由存储层分配）
+  + Create()    创建待审核申请（编号由存储层分配）
   + Approve()   PendingReview → Approved（审核通过）
-  + Reject()    PendingReview → Rejected（审核驳回，必须填理由）
+  + Reject()    PendingReview → Rejected（审核驳回，理由必填）
 }
 
 class "AuditRecord(审核记录)" as AuditRecord <<实体>> {
-  - RecordID(记录ID) : string {PK, 非空}
-  - ItemID(商品ID) : string {非空}
-  - ReviewerID(审核员ID) : string {非空}
-  - Result(审核结果) : AuditResult {非空}
-  - AuditedAtMs(审核时间) : long long {非空}
-  - Reason(理由) : string {可空}
+  + RecordID(记录ID) : string {PK, 非空}
+  + ItemID(商品ID) : string {非空}
+  + ReviewerID(审核员ID) : string {非空}
+  + Result(审核结果) : AuditResult {非空}
+  + AuditedAtMs(审核时间) : long long {非空}
+  + Reason(理由) : string {可空}
   ==
-  + Create() 创建一个审核记录
+  + Create()  创建一条审核记录（编号由存储层分配）
 }
 
 class "OperationLog(操作日志)" as OperationLog <<实体>> {
-  - LogID(日志ID) : string {PK, 非空}
-  - Type(操作类型) : LogType {非空}
-  - OperatedAtMs(操作时间) : long long {非空}
-  - Content(日志内容) : string {非空}
+  + LogID(日志ID) : string {PK, 非空}
+  + Type(操作类型) : LogType {非空}
+  + OperatedAtMs(操作时间) : long long {非空}
+  + OperatorID(操作人ID) : string {非空}
+  + ObjectType(对象类型) : string {非空}
+  + ObjectID(对象ID) : string {非空}
+  + Description(说明) : string {可空}
   ==
-  + CreateRegister()      注册：用户[用户ID]在[时间]注册了账号
-  + CreateItemSold()      成交：买家[买家ID]和卖家[卖家ID]在[时间]成功交易[商品ID]+[商品名称]
-  + CreateItemAudit()     商品审核：管理员[管理员ID]在[时间]审核[通过/驳回]了卖家[卖家ID]的商品[商品ID]+[商品名称]
-  + CreateSellerAudit()   卖家审核：管理员[管理员ID]在[时间]审核[通过/驳回]了用户[用户ID]的卖家申请
+  + Create()  创建一条日志（只增，不改不删）
 }
 
 ' ============ 枚举 ============
 
 enum "AccountStatus(账号状态)" as AccountStatus {
-  Normal   正常
-  Banned   已封禁 {只影响卖家权限}
+  Normal    正常
+  Banned    已封禁
 }
 
 enum "Role(当前权限)" as Role {
@@ -127,10 +145,25 @@ enum "Role(当前权限)" as Role {
 }
 
 enum "ItemStatus(商品状态)" as ItemStatus {
-  Draft           草稿
-  PendingReview   待审核
-  Rejected        驳回
-  Published       已发布
+  Draft               草稿
+  PendingReview       待审核
+  Rejected            驳回
+  Published           已发布
+  Confirmed           已确认
+  OffShelf            已下架
+  ViolationOffShelf   违规下架
+  Traded              交易完成
+}
+
+enum "ReservationStatus(预约状态)" as ReservationStatus {
+  PendingConfirm    待确认
+  Succeeded         已成功
+}
+
+enum "TradeStatus(交易记录状态)" as TradeStatus {
+  InProgress    进行中
+  Completed     已完成
+  Cancelled     已作废
 }
 
 enum "ApplicationStatus(认证审核状态)" as ApplicationStatus {
@@ -158,10 +191,18 @@ enum "Condition(成色)" as Condition {
 }
 
 enum "LogType(日志类型)" as LogType {
-  Register          注册
-  ItemSold          商品成交
-  ItemAudited       商品审核
-  SellerAudited     卖家申请审核
+  Register              注册
+  SubmitReview          提交审核
+  Audit                 审核
+  OffShelf              下架
+  ViolationHandling     违规处置
+  Ban                   封禁
+  Unban                 解封
+  CreateReservation     发起预约
+  CancelReservation     取消预约
+  ConfirmReservation    确认预约
+  DeleteReservation     预约记录删除
+  CompleteTrade         完成交易
 }
 
 ' ============ 关联关系 ============
@@ -169,11 +210,14 @@ enum "LogType(日志类型)" as LogType {
 User "1" -- "0..*" Item : 发布者 >
 User "1" -- "0..*" Reservation : 买家 >
 Item "1" -- "0..*" Reservation : 被预约 >
+User "1" -- "0..*" TradeRecord : 买家 >
+User "1" -- "0..*" TradeRecord : 卖家 >
+Reservation "1" -- "0..1" TradeRecord : 确认后生成 >
+Item "1" -- "0..*" TradeRecord : 交易对象 >
 User "1" -- "0..*" SellerApplication : 申请人 >
 User "1" -- "0..*" SellerApplication : 审核人 >
 Item "1" -- "0..*" AuditRecord : 被审核 >
 User "1" -- "0..*" AuditRecord : 审核人 >
 User "1" -- "0..*" OperationLog : 操作人 >
-
 
 @enduml

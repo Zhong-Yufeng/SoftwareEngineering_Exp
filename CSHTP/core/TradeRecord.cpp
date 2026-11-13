@@ -1,79 +1,98 @@
 #include"TradeRecord.h"
 
-// ============================================================
-// 成交记录
-//
-// 这里只校验「这条记录本身能不能成立」。商品在不在库里、预约有没有被
-// 确认过、调用者是不是这个卖家，都要先查库才知道，属于服务层的编排。
-// ============================================================
-std::optional<TradeRecord> TradeRecord::Create(const Item& Goods,
-                                               const std::string& BuyerID,
+std::optional<TradeRecord> TradeRecord::Create(const Reservation& Order,
+                                               const Item& Goods,
                                                const std::string& BuyerContact,
-                                               long long TradedAtMs)
+                                               long long CreatedAtMs)
 {
-    // 没有编号的商品还没入库，不能拿来成交
-    if (Goods.GetItemID().empty() || Goods.GetSellerID().empty())
+    // 记录必须挂在一条已成功的预约和一件已确认的商品上，否则不成立
+    if (Order.ReservationID.empty() || Order.ItemID.empty()
+        || Goods.ItemID.empty() || Goods.SellerID.empty())
+    {
+        return std::nullopt;
+    }
+    if (Order.Status != ReservationStatus::Succeeded)
+    {
+        return std::nullopt;
+    }
+    if (Goods.Status != ItemStatus::Confirmed)
+    {
+        return std::nullopt;
+    }
+    if (Order.ItemID != Goods.ItemID)
     {
         return std::nullopt;
     }
 
-    // 只有已发布（在售）的商品能成交。
-    // 草稿、驳回、待审核都不是「可供购买」，放行的话，一份没通过审核的
-    // 内容也能变成正式成交记录。
-    if (Goods.GetStatus() != ItemStatus::Published)
+    // 买家必须有身份，且不能是自己买自己
+    if (Order.BuyerID.empty() || Order.BuyerID == Goods.SellerID)
     {
         return std::nullopt;
     }
 
-    // 买家必须有身份，且不能买自己的东西
-    if (BuyerID.empty() || BuyerID == Goods.GetSellerID())
+    // 成交后双方只能靠联系方式联系，缺一个这条记录就残缺
+    if (BuyerContact.empty() || Goods.Contact.empty())
     {
         return std::nullopt;
     }
 
-    // 双方联系方式是成交后唯一的联系途径，缺一个这条记录就残缺。
-    // 成交后商品和预约都会被删除，没有别的地方能补。
-    if (BuyerContact.empty() || Goods.GetContact().empty())
-    {
-        return std::nullopt;
-    }
-
-    // 价格为负没有业务含义。0 元商品在 Item::CreateDraft 就被挡掉了，
-    // 这里是防御性检查，不承担主要校验职责。
-    if (Goods.GetPriceCents() < 0)
-    {
-        return std::nullopt;
-    }
-
-    // 成交时间由调用方传入而不是内部读时钟，便于测试断言具体数值
-    if (TradedAtMs <= 0)
+    if (Goods.PriceCents < 0 || CreatedAtMs <= 0)
     {
         return std::nullopt;
     }
 
     TradeRecord Record;
+    Record.TradeID = "";                // 编号留给存储层分配
+    Record.ReservationID = Order.ReservationID;
+    Record.ItemID = Goods.ItemID;
+    Record.BuyerID = Order.BuyerID;
+    Record.SellerID = Goods.SellerID;
+    Record.Status = TradeStatus::InProgress;
+    Record.CreatedAtMs = CreatedAtMs;
 
-    Record.TradeID = "";                    // 编号留给存储层分配
-    Record.ItemID = Goods.GetItemID();
-    Record.BuyerID = BuyerID;
-    Record.SellerID = Goods.GetSellerID();
-    Record.TradedAtMs = TradedAtMs;
-
-    // 以下五个字段是「成交那一刻的快照」：拷的是值，不是指向商品的引用。
-    // 商品随后会被删除，卖家日后也会改联系方式，这条记录都不应跟着变。
-    Record.ItemTitle = Goods.GetTitle();
-    Record.PriceCents = Goods.GetPriceCents();
-    Record.TradeLocation = Goods.GetTradeLocation();
-    Record.SellerContact = Goods.GetContact();
+    // 以下字段是确认那一刻的快照，之后商品、用户怎么改都不跟着变
+    Record.ItemTitle = Goods.Title;
+    Record.PriceCents = Goods.PriceCents;
+    Record.TradeLocation = Goods.TradeLocation;
+    Record.SellerContact = Goods.Contact;
     Record.BuyerContact = BuyerContact;
-
     return Record;
+}
+
+bool TradeRecord::Complete(long long TimeMs)
+{
+    // 只有进行中的交易才会结束；已完成不可再来一次，已作废更不能被「完成」
+    if (Status != TradeStatus::InProgress || TimeMs <= 0)
+    {
+        return false;
+    }
+
+    Status = TradeStatus::Completed;
+    CompletedAtMs = TimeMs;
+    return true;
+}
+
+bool TradeRecord::Cancel(const std::string& Reason, long long TimeMs)
+{
+    // 已完成的交易已经发生，不能事后作废；只有进行中的才能被打断
+    if (Status != TradeStatus::InProgress)
+    {
+        return false;
+    }
+    if (Reason.empty() || TimeMs <= 0)
+    {
+        return false;
+    }
+
+    Status = TradeStatus::Cancelled;
+    CancelReason = Reason;
+    CancelledAtMs = TimeMs;
+    return true;
 }
 
 bool TradeRecord::IsParticipant(const std::string& UserID) const
 {
-    // 空串必须挡掉：记录里不会出现空 ID，但调用方误传空串时，
-    // 不能因为「空 == 空」把陌生人当成参与者。
+    // 空串必须挡掉：记录里不会出现空 ID，不能因为「空 == 空」把陌生人放进来
     if (UserID.empty())
     {
         return false;

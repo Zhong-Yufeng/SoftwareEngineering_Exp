@@ -7,7 +7,7 @@ out/
 *.pdb
 *.ilk
 *.log
-
+*.bat
 # 数据库凭据
 config/db.ini
 

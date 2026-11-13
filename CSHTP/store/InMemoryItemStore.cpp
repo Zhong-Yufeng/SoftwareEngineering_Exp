@@ -3,18 +3,12 @@
 
 bool InMemoryItemStore::Save(Item& Goods)
 {
-    // 没有编号 = 新商品，由存储层分配一个
-    if (Goods.GetItemID().empty())
+    if (Goods.ItemID.empty())
     {
-        if (!Goods.AssignID(MakeNextID()))
-        {
-            return false;
-        }
+        Goods.ItemID = MakeNextID();
     }
 
-    // 有编号 = 新增或覆盖。用 insert_or_assign 而不是 operator[]，
-    // 因为 operator[] 要求 Item 可默认构造（它是私有的）。
-    Items.insert_or_assign(Goods.GetItemID(), Goods);
+    Items.insert_or_assign(Goods.ItemID, Goods);
     return true;
 }
 
@@ -41,44 +35,41 @@ std::vector<Item> InMemoryItemStore::Query(const ItemQuery& Cond) const
         }
     }
 
-    // 先筛后排：排序只对筛出来的结果做，不会打乱存储本身
     switch (Cond.Sort)
     {
-        case ItemSort::PriceAsc:
-            std::sort(Out.begin(), Out.end(),
-                      [](const Item& A, const Item& B)
-                      {
-                          return A.GetPriceCents() < B.GetPriceCents();
-                      });
-            break;
-
-        case ItemSort::PriceDesc:
-            std::sort(Out.begin(), Out.end(),
-                      [](const Item& A, const Item& B)
-                      {
-                          return A.GetPriceCents() > B.GetPriceCents();
-                      });
-            break;
-
-        case ItemSort::PublishedNewest:
-            std::sort(Out.begin(), Out.end(),
-                      [](const Item& A, const Item& B)
-                      {
-                          return A.GetPublishedAtMs() > B.GetPublishedAtMs();
-                      });
-            break;
-
-        case ItemSort::None:
-        default:
-            break;
+    case ItemSort::PriceAsc:
+        std::sort(Out.begin(), Out.end(),
+                  [](const Item& A, const Item& B) { return A.PriceCents < B.PriceCents; });
+        break;
+    case ItemSort::PriceDesc:
+        std::sort(Out.begin(), Out.end(),
+                  [](const Item& A, const Item& B) { return A.PriceCents > B.PriceCents; });
+        break;
+    case ItemSort::PublishedNewest:
+        std::sort(Out.begin(), Out.end(),
+                  [](const Item& A, const Item& B) { return A.PublishedAtMs > B.PublishedAtMs; });
+        break;
+    case ItemSort::None:
+    default:
+        break;
     }
 
     return Out;
 }
 
+std::vector<Item> InMemoryItemStore::All() const
+{
+    std::vector<Item> Out;
+    Out.reserve(Items.size());
+    for (const auto& Entry : Items)
+    {
+        Out.push_back(Entry.second);
+    }
+    return Out;
+}
+
 bool InMemoryItemStore::Remove(const std::string& ItemID)
 {
-    // erase 返回删掉的个数，0 表示本来就没有
     return Items.erase(ItemID) > 0;
 }
 
@@ -89,8 +80,6 @@ std::size_t InMemoryItemStore::Size() const
 
 std::string InMemoryItemStore::MakeNextID()
 {
-    // 正常情况下 ++ 一次就能拿到空编号；循环是为了防御「编号被别人占用」
-    //（比如以后从文件读入数据，里面已经存在 item-3）
     while (true)
     {
         ++LastAssignedNumber;
@@ -104,55 +93,53 @@ std::string InMemoryItemStore::MakeNextID()
 
 bool InMemoryItemStore::Matches(const Item& Goods, const ItemQuery& Cond) const
 {
-    // 关键词只要出现在标题或描述任意一处即可
     if (Cond.Keyword.has_value())
     {
-        const bool InTitle = Goods.GetTitle().find(Cond.Keyword.value()) != std::string::npos;
-        const bool InDescription = Goods.GetDescription().find(Cond.Keyword.value()) != std::string::npos;
+        const bool InTitle = Goods.Title.find(Cond.Keyword.value()) != std::string::npos;
+        const bool InDescription = Goods.Description.find(Cond.Keyword.value()) != std::string::npos;
         if (!InTitle && !InDescription)
         {
             return false;
         }
     }
 
-    if (Cond.ItemCategory.has_value() && Goods.GetCategory() != Cond.ItemCategory.value())
+    if (Cond.ItemCategory.has_value() && Goods.ItemCategory != Cond.ItemCategory.value())
     {
         return false;
     }
 
-    if (Cond.ItemCondition.has_value() && Goods.GetCondition() != Cond.ItemCondition.value())
+    if (Cond.ItemCondition.has_value() && Goods.ItemCondition != Cond.ItemCondition.value())
     {
         return false;
     }
 
-    // 价格区间两端都包含
-    if (Cond.MinPriceCents.has_value() && Goods.GetPriceCents() < Cond.MinPriceCents.value())
+    if (Cond.MinPriceCents.has_value() && Goods.PriceCents < Cond.MinPriceCents.value())
     {
         return false;
     }
 
-    if (Cond.MaxPriceCents.has_value() && Goods.GetPriceCents() > Cond.MaxPriceCents.value())
+    if (Cond.MaxPriceCents.has_value() && Goods.PriceCents > Cond.MaxPriceCents.value())
     {
         return false;
     }
 
-    if (Cond.Status.has_value() && Goods.GetStatus() != Cond.Status.value())
+    if (Cond.Status.has_value() && Goods.Status != Cond.Status.value())
     {
         return false;
     }
 
-    if (Cond.SellerID.has_value() && Goods.GetSellerID() != Cond.SellerID.value())
+    if (Cond.SellerID.has_value() && Goods.SellerID != Cond.SellerID.value())
     {
         return false;
     }
 
     if (Cond.TradeLocation.has_value()
-        && Goods.GetTradeLocation().find(Cond.TradeLocation.value()) == std::string::npos)
+        && Goods.TradeLocation.find(Cond.TradeLocation.value()) == std::string::npos)
     {
         return false;
     }
 
-    if (Cond.PublishedAfterMs.has_value() && Goods.GetPublishedAtMs() < Cond.PublishedAfterMs.value())
+    if (Cond.PublishedAfterMs.has_value() && Goods.PublishedAtMs < Cond.PublishedAfterMs.value())
     {
         return false;
     }

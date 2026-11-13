@@ -1,17 +1,18 @@
-#include "InMemoryAuditRecordStore.h"
-
+#include"InMemoryAuditRecordStore.h"
 #include<algorithm>
 
 namespace
 {
-    // 按审核时间升序。时间相同的两条理论上只会出现在
-    // 「同一毫秒内审了两件」这种极端情况，这里不额外定序。
     void SortByTime(std::vector<AuditRecord>& Records)
     {
         std::sort(Records.begin(), Records.end(),
                   [](const AuditRecord& A, const AuditRecord& B)
                   {
-                      return A.AuditedAtMs < B.AuditedAtMs;
+                      if (A.AuditedAtMs != B.AuditedAtMs)
+                      {
+                          return A.AuditedAtMs < B.AuditedAtMs;
+                      }
+                      return A.RecordID < B.RecordID;
                   });
     }
 }
@@ -40,7 +41,6 @@ std::optional<AuditRecord> InMemoryAuditRecordStore::FindByID(const std::string&
 std::vector<AuditRecord> InMemoryAuditRecordStore::ListByItem(const std::string& ItemID) const
 {
     std::vector<AuditRecord> Out;
-
     if (ItemID.empty())
     {
         return Out;
@@ -61,7 +61,6 @@ std::vector<AuditRecord> InMemoryAuditRecordStore::ListByItem(const std::string&
 std::vector<AuditRecord> InMemoryAuditRecordStore::ListByReviewer(const std::string& ReviewerID) const
 {
     std::vector<AuditRecord> Out;
-
     if (ReviewerID.empty())
     {
         return Out;
@@ -86,8 +85,6 @@ std::optional<AuditRecord> InMemoryAuditRecordStore::FindLatestByItem(const std:
         return std::nullopt;
     }
 
-    // 不用先排全部再取最后一条：这里只关心最大的那个时间，
-    // 一遍遍历就够，也省掉一次拷贝
     std::optional<AuditRecord> Latest;
     for (const auto& Entry : Records)
     {
