@@ -24,7 +24,8 @@ namespace ServiceRules
         return "账号已被封禁";
     }
 
-    // 调用者必须是处于正常状态的买家（未封禁、非管理员）
+    // 调用者按服务类的名称约束（BuyerService / SellerService / AdminService），
+    // 这里只校验账号可用性：账号存在、未被封禁。身份（角色）不在此处判断。
     inline bool RequireBuyer(UserStore& Users, const std::string& BuyerID, std::string* Error)
     {
         const auto Buyer = Users.FindByID(BuyerID);
@@ -35,18 +36,13 @@ namespace ServiceRules
         }
         if (Buyer->Status == AccountStatus::Banned)
         {
-            SetError(Error, "账号已被封禁");
-            return false;
-        }
-        if (Buyer->UserRole == Role::Admin)
-        {
-            SetError(Error, "管理员不能发起预约");
+            SetError(Error, ServiceRules::BannedMessage(Buyer.value()));
             return false;
         }
         return true;
     }
 
-    // 调用者必须是处于正常状态的卖家
+    // 调用者按服务类的名称约束，这里只校验账号存在且未被封禁。
     inline bool RequireSeller(UserStore& Users, const std::string& SellerID, std::string* Error)
     {
         const auto Seller = Users.FindByID(SellerID);
@@ -57,12 +53,7 @@ namespace ServiceRules
         }
         if (Seller->Status == AccountStatus::Banned)
         {
-            SetError(Error, "账号已被封禁");
-            return false;
-        }
-        if (Seller->UserRole != Role::Seller)
-        {
-            SetError(Error, "仅卖家可执行该操作");
+            SetError(Error, ServiceRules::BannedMessage(Seller.value()));
             return false;
         }
         return true;
