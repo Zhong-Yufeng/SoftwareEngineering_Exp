@@ -7,6 +7,7 @@ BuyerService::BuyerService(UserStore& UserStoreRef,
                            ReservationStore& ReservationStoreRef,
                            TradeRecordStore& TradeRecordStoreRef,
                            LogService& LogStore,
+                           Transaction& TransactionRef,
                            ServiceClock ClockSource)
     : Users(UserStoreRef),
       Applications(ApplicationStore),
@@ -14,6 +15,7 @@ BuyerService::BuyerService(UserStore& UserStoreRef,
       Reservations(ReservationStoreRef),
       Trades(TradeRecordStoreRef),
       Logs(LogStore),
+      Tx(TransactionRef),
       Clock(ClockSource)
 {
 }
@@ -51,6 +53,12 @@ std::optional<User> BuyerService::Register(const std::string& Phone,
     }
 
     User Created = *Candidate;
+    TransactionScope Unit(Tx);
+    if (!Unit.Ready())
+    {
+        SetError(Error, "数据库事务开启失败");
+        return std::nullopt;
+    }
     if (!Users.Save(Created))
     {
         SetError(Error, "用户保存失败");
@@ -58,6 +66,11 @@ std::optional<User> BuyerService::Register(const std::string& Phone,
     }
 
     Logs.Record(LogType::Register, Created.UserID, ServiceObject::User, Created.UserID, "注册账号");
+    if (!Unit.Commit())
+    {
+        SetError(Error, "注册结果保存失败");
+        return std::nullopt;
+    }
     return Created;
 }
 
@@ -121,6 +134,12 @@ std::optional<Reservation> BuyerService::Reserve(const std::string& BuyerID,
     }
 
     Reservation Saved = Created.value();
+    TransactionScope Unit(Tx);
+    if (!Unit.Ready())
+    {
+        SetError(Error, "数据库事务开启失败");
+        return std::nullopt;
+    }
     if (!Reservations.Save(Saved))
     {
         SetError(Error, "预约保存失败");
@@ -129,6 +148,11 @@ std::optional<Reservation> BuyerService::Reserve(const std::string& BuyerID,
 
     Logs.Record(LogType::CreateReservation, BuyerID, ServiceObject::Reservation,
                 Saved.ReservationID, "发起预约");
+    if (!Unit.Commit())
+    {
+        SetError(Error, "预约保存失败");
+        return std::nullopt;
+    }
     return Saved;
 }
 
@@ -169,6 +193,12 @@ bool BuyerService::CancelReservation(const std::string& BuyerID,
         return false;
     }
 
+    TransactionScope Unit(Tx);
+    if (!Unit.Ready())
+    {
+        SetError(Error, "数据库事务开启失败");
+        return false;
+    }
     if (!Reservations.Remove(ReservationID))
     {
         SetError(Error, "预约删除失败");
@@ -177,6 +207,11 @@ bool BuyerService::CancelReservation(const std::string& BuyerID,
 
     Logs.Record(LogType::CancelReservation, BuyerID, ServiceObject::Reservation,
                 ReservationID, "取消预约");
+    if (!Unit.Commit())
+    {
+        SetError(Error, "取消预约失败");
+        return false;
+    }
     return true;
 }
 

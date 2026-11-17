@@ -8,6 +8,7 @@ AdminService::AdminService(UserStore& UserStoreRef,
                            ReservationStore& ReservationStoreRef,
                            TradeRecordStore& TradeRecordStoreRef,
                            LogService& LogStore,
+                           Transaction& TransactionRef,
                            ServiceClock ClockSource)
     : Users(UserStoreRef),
       Applications(ApplicationStore),
@@ -16,6 +17,7 @@ AdminService::AdminService(UserStore& UserStoreRef,
       Reservations(ReservationStoreRef),
       Trades(TradeRecordStoreRef),
       Logs(LogStore),
+      Tx(TransactionRef),
       Clock(ClockSource)
 {
 }
@@ -115,6 +117,12 @@ bool AdminService::ApproveApplication(const std::string& AdminID,
         return false;
     }
 
+    TransactionScope Unit(Tx);
+    if (!Unit.Ready())
+    {
+        SetError(Error, "数据库事务开启失败");
+        return false;
+    }
     if (!Users.Save(Applicant.value()) || !Applications.Save(Application))
     {
         SetError(Error, "审核结果保存失败");
@@ -123,6 +131,11 @@ bool AdminService::ApproveApplication(const std::string& AdminID,
 
     Logs.Record(LogType::Audit, AdminID, ServiceObject::SellerApplication,
                 Application.ApplicationID, "卖家认证通过");
+    if (!Unit.Commit())
+    {
+        SetError(Error, "审核结果保存失败");
+        return false;
+    }
     return true;
 }
 
@@ -151,6 +164,12 @@ bool AdminService::RejectApplication(const std::string& AdminID,
         SetError(Error, "审核失败");
         return false;
     }
+    TransactionScope Unit(Tx);
+    if (!Unit.Ready())
+    {
+        SetError(Error, "数据库事务开启失败");
+        return false;
+    }
     if (!Applications.Save(Application))
     {
         SetError(Error, "审核结果保存失败");
@@ -159,6 +178,11 @@ bool AdminService::RejectApplication(const std::string& AdminID,
 
     Logs.Record(LogType::Audit, AdminID, ServiceObject::SellerApplication,
                 Application.ApplicationID, "卖家认证驳回：" + Reason);
+    if (!Unit.Commit())
+    {
+        SetError(Error, "审核结果保存失败");
+        return false;
+    }
     return true;
 }
 
@@ -189,6 +213,12 @@ bool AdminService::ApproveItem(const std::string& AdminID,
         SetError(Error, "仅待审核商品可通过");
         return false;
     }
+    TransactionScope Unit(Tx);
+    if (!Unit.Ready())
+    {
+        SetError(Error, "数据库事务开启失败");
+        return false;
+    }
     if (!Items.Save(Goods.value()))
     {
         SetError(Error, "商品保存失败");
@@ -204,6 +234,11 @@ bool AdminService::ApproveItem(const std::string& AdminID,
 
     Logs.Record(LogType::Audit, AdminID, ServiceObject::Item,
                 ItemID, "商品审核通过");
+    if (!Unit.Commit())
+    {
+        SetError(Error, "商品保存失败");
+        return false;
+    }
     return true;
 }
 
@@ -231,6 +266,12 @@ bool AdminService::RejectItem(const std::string& AdminID,
         SetError(Error, "仅待审核商品可驳回");
         return false;
     }
+    TransactionScope Unit(Tx);
+    if (!Unit.Ready())
+    {
+        SetError(Error, "数据库事务开启失败");
+        return false;
+    }
     if (!Items.Save(Goods.value()))
     {
         SetError(Error, "商品保存失败");
@@ -246,6 +287,11 @@ bool AdminService::RejectItem(const std::string& AdminID,
 
     Logs.Record(LogType::Audit, AdminID, ServiceObject::Item,
                 ItemID, "商品审核驳回：" + Reason);
+    if (!Unit.Commit())
+    {
+        SetError(Error, "商品保存失败");
+        return false;
+    }
     return true;
 }
 

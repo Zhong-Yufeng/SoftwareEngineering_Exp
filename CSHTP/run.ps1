@@ -50,7 +50,7 @@ foreach ($Line in $EnvLines) {
 function Build-Executable {
     param(
         [string[]]$Sources,
-        [string]$IncludeDirs,
+        [string[]]$IncludeDirs,
         [string]$ExeName
     )
 
@@ -58,7 +58,7 @@ function Build-Executable {
     if (Test-Path $OutDir) { Remove-Item $OutDir -Recurse -Force }
     New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
-    $CompilerOutput = & cl /nologo /std:c++17 /EHsc /utf-8 /W3 $IncludeDirs.Split(' ') @Sources `
+    $CompilerOutput = & cl /nologo /std:c++17 /EHsc /utf-8 /W3 $IncludeDirs @Sources `
                            "/Fe:$OutDir\$ExeName" "/Fo:$OutDir\" 2>&1
     $CompilerOutput | Write-Host
     if ($LASTEXITCODE -ne 0) {
@@ -68,15 +68,27 @@ function Build-Executable {
     return (Join-Path $OutDir $ExeName)
 }
 
-$CommonSources = (Get-ChildItem -Path 'core', 'store', 'service' -Filter *.cpp | Sort-Object Name | ForEach-Object { $_.FullName })
+$SrcDir = Join-Path $Root 'src'
+$CoreDir = Join-Path $SrcDir 'core'
+$StoreDir = Join-Path $SrcDir 'store'
+$InMemoryDir = Join-Path $StoreDir 'InMemory'
+$DbDir = Join-Path $StoreDir 'DB'
+$ServiceDir = Join-Path $SrcDir 'service'
+$CliDir = Join-Path $SrcDir 'cli'
+$TestDir = Join-Path $Root 'test'
+
+$CommonSources = @((Get-ChildItem -Path $CoreDir, $StoreDir, $ServiceDir -Filter *.cpp -Recurse | Sort-Object FullName | ForEach-Object { $_.FullName })
+                   (Join-Path $DbDir 'sqlite3.c'))
 
 # ---------------------------------------------------------------------------
 # 3. Dispatch
 # ---------------------------------------------------------------------------
 if ($Task -eq 'run') {
-    $Sources = @((Join-Path $Root 'main.cpp'), (Join-Path $Root 'cli\Cli.cpp')) + $CommonSources
+    $Sources = @((Join-Path $SrcDir 'main.cpp'), (Join-Path $CliDir 'Cli.cpp')) + $CommonSources
+    $IncludeDirs = @('/I', $SrcDir, '/I', $CoreDir, '/I', $StoreDir, '/I', $InMemoryDir, '/I', $DbDir,
+                     '/I', $ServiceDir, '/I', $CliDir)
     Write-Host 'Building CSHTP ...'
-    $Exe = Build-Executable -Sources $Sources -IncludeDirs '/I . /I core /I store /I service /I cli' -ExeName 'cshtp.exe'
+    $Exe = Build-Executable -Sources $Sources -IncludeDirs $IncludeDirs -ExeName 'cshtp.exe'
     Write-Host ''
     Write-Host "[OK] $Exe"
     Write-Host ''
@@ -87,9 +99,11 @@ if ($Task -eq 'run') {
 # ---------------------------------------------------------------------------
 # 4. Smoke tests
 # ---------------------------------------------------------------------------
-$TestSources = @((Get-ChildItem -Path 'test' -Filter *.cpp | Sort-Object Name | ForEach-Object { $_.FullName })) + $CommonSources
+$TestSources = @((Get-ChildItem -Path $TestDir -Filter *.cpp | Sort-Object Name | ForEach-Object { $_.FullName })) + $CommonSources
+$TestIncludeDirs = @('/I', $SrcDir, '/I', $CoreDir, '/I', $StoreDir, '/I', $InMemoryDir, '/I', $DbDir,
+                     '/I', $ServiceDir, '/I', $TestDir)
 Write-Host 'Building smoke tests ...'
-$TestExe = Build-Executable -Sources $TestSources -IncludeDirs '/I . /I core /I store /I service /I test' -ExeName 'cshtp_tests.exe'
+$TestExe = Build-Executable -Sources $TestSources -IncludeDirs $TestIncludeDirs -ExeName 'cshtp_tests.exe'
 
 Write-Host ''
 Write-Host 'Running smoke tests ...'

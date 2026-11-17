@@ -39,3 +39,4 @@ void RunTests();
 void RunCoreTests();
 void RunStoreTests();
 void RunServiceTests();
+void RunDbTests();

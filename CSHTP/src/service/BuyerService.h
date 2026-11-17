@@ -21,6 +21,7 @@ class BuyerService
                      ReservationStore& ReservationStoreRef,
                      TradeRecordStore& TradeRecordStoreRef,
                      LogService& LogStore,
+                     Transaction& TransactionRef,
                      ServiceClock Clock = SystemTimeMs);
 
         // ==================== 注册与资料 ====================
@@ -97,5 +98,6 @@ class BuyerService
         ReservationStore& Reservations;
         TradeRecordStore& Trades;
         LogService& Logs;
+        Transaction& Tx;
         ServiceClock Clock;
 };

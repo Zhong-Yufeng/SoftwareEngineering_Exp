@@ -31,6 +31,7 @@ class AdminService
                      ReservationStore& ReservationStoreRef,
                      TradeRecordStore& TradeRecordStoreRef,
                      LogService& LogStore,
+                     Transaction& TransactionRef,
                      ServiceClock Clock = SystemTimeMs);
 
         // ==================== 管理员账号 ====================
@@ -135,5 +136,6 @@ class AdminService
         ReservationStore& Reservations;
         TradeRecordStore& Trades;
         LogService& Logs;
+        Transaction& Tx;
         ServiceClock Clock;
 };

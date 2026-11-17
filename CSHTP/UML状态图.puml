@@ -1,0 +1,64 @@
+@startuml UML状态图
+' 校园二手交易平台 —— 状态图（实现版）
+' 依据：requirements.md REQ-018（商品）/ REQ-019（预约）+ CSHTP 当前代码
+' 实线 = 已实现；带「未实现」标记的转换在代码中仍是空函数
+title 校园二手交易平台 状态图（实现）
+
+state "商品状态" as ITEM {
+  [*] --> 草稿 : 卖家新建商品（SellerService::CreateDraft）
+  草稿 --> 待审核 : 提交审核（Item::SubmitForReview）
+  待审核 --> 已发布 : 审核通过（Item::Approve）
+  待审核 --> 驳回 : 审核驳回（Item::Reject）
+  驳回 --> 待审核 : 修改后重新提交
+  已发布 --> 已确认 : 卖家确认一条预约（Item::Confirm）
+  已确认 --> 交易完成 : 线下成交后确认（Item::CompleteTrade）
+  已发布 --> 已下架 : 卖家下架（未实现）
+  已发布 --> 违规下架 : 管理员违规处置（未实现）
+  已确认 --> 已下架 : 账号被封禁（未实现）
+  已确认 --> 违规下架 : 管理员违规处置（未实现）
+  已下架 --> [*]
+  违规下架 --> [*]
+  交易完成 --> [*]
+}
+
+state "预约状态" as RES {
+  [*] --> 待确认 : 买家发起预约（Reservation::Create）
+  待确认 --> 已成功 : 卖家确认（Reservation::Confirm）
+  待确认 --> [*] : 买家取消（ReservationStore::Remove）
+  待确认 --> [*] : 未被选中（卖家确认他人时删除）
+  待确认 --> [*] : 商品下架 / 账号封禁（依赖下架，未实现）
+  已成功 --> [*] : 交易完成，记录保留
+}
+
+state "交易记录状态" as TRADE {
+  [*] --> 进行中 : 卖家确认预约时生成（TradeRecord::Create）
+  进行中 --> 已完成 : 卖家完成交易（TradeRecord::Complete）
+  进行中 --> 已作废 : 下架 / 封禁时作废（未实现）
+  已完成 --> [*]
+  已作废 --> [*]
+}
+
+note right of ITEM
+  已实现 6 个状态：草稿、待审核、驳回、已发布、已确认、交易完成。
+  「已下架」「违规下架」两个状态没有入口：
+  Item::OffShelf / Item::ViolationOffShelf 是空实现，
+  SellerService::OffShelfItem、AdminService::ViolationOffShelfItem
+  同样未实现，界面调用后提示「功能尚未实现」。
+
+  禁止的转换（REQ-018）：
+  交易完成 → 已发布
+  违规下架 → 已发布
+end note
+
+note right of RES
+  预约只有「待确认」「已成功」两种存续状态，
+  失效一律删除记录，不设作废状态（REQ-011）
+end note
+
+note right of TRADE
+  「已作废」状态已建模、TradeRecord::Cancel 已实现，
+  但没有调用方：下架与封禁未实现，
+  所以记录不会进入作废状态。
+end note
+
+@enduml

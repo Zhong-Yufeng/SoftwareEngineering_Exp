@@ -5,4 +5,5 @@ void RunTests()
     RunCoreTests();
     RunStoreTests();
     RunServiceTests();
+    RunDbTests();
 }

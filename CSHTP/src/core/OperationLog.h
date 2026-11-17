@@ -3,6 +3,8 @@
 #include<string>
 #include"enums.h"
 
+class SqliteOperationLogStore;
+
 // 操作日志：只创建、不修改、不删除（REQ-021）
 class OperationLog
 {
@@ -24,5 +26,6 @@ class OperationLog
                                                   long long NowMs);
 
     private:
+        friend class SqliteOperationLogStore;
         OperationLog() = default;
 };

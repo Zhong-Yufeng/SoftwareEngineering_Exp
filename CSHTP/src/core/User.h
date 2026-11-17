@@ -3,6 +3,8 @@
 #include<string>
 #include"enums.h"
 
+class SqliteUserStore;
+
 // 用户：买家、卖家、管理员共用，权限由 Role 区分
 class User
 {
@@ -37,5 +39,6 @@ class User
         bool AssignID(const std::string& NewID);
 
     private:
+        friend class SqliteUserStore;
         User() = default;
 };

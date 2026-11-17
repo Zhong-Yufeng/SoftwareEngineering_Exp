@@ -1,0 +1,82 @@
+@startuml UML时序图
+' 校园二手交易平台 —— 时序图（实现版：并发预约与卖家确认）
+' 依据：REQ-012 / REQ-019 / REQ-020 / REQ-013 + CSHTP 当前代码
+' 参与者写的是实现里的类，消息写的是实际方法
+title 校园二手交易平台 时序图：并发预约与卖家确认（实现）
+
+autonumber
+
+actor "买家甲" as B1
+actor "买家乙" as B2
+participant "cli::Cli\n（买家页）" as CLI
+participant "BuyerService" as BS
+participant "ItemStore" as IS
+participant "ReservationStore" as RS
+participant "LogService" as LS
+actor "卖家" as S
+participant "SellerService" as SS
+participant "TradeRecordStore" as TS
+
+group 并发发起预约
+  B1 -> CLI : 选中商品 P，发起预约
+  CLI -> BS : Reserve(甲, P)
+  BS -> IS : FindByID(P)
+  IS --> BS : 商品（已发布）
+  BS -> RS : 查甲是否已有该商品的预约
+  RS --> BS : 无
+  BS -> RS : Save(预约①：待确认)
+  BS -> LS : Record(CreateReservation)
+  BS --> CLI : 预约①
+  CLI --> B1 : 预约成功（待确认）
+
+  B2 -> CLI : 选中商品 P，发起预约
+  CLI -> BS : Reserve(乙, P)
+  BS -> IS : FindByID(P)
+  IS --> BS : 商品（已发布）
+  BS -> RS : Save(预约②：待确认)
+  BS -> LS : Record(CreateReservation)
+  BS --> CLI : 预约②
+  CLI --> B2 : 预约成功（待确认）
+end
+
+group 卖家确认甲的预约
+  S -> SS : ConfirmReservation(卖家, P, 预约①)
+  SS -> IS : FindByID(P)，校验归属与「已发布」
+  SS -> RS : FindByID(预约①)
+  SS -> RS : Save(预约①：已成功)
+  SS -> IS : Save(商品 P：已确认)
+  SS -> RS : Remove(预约②)、LogService.Record(DeleteReservation)
+  SS -> TS : Save(交易记录：进行中，快照标题/价格/联系方式)
+  SS -> LS : Record(ConfirmReservation)
+  SS --> S : 确认成功
+end
+
+group 旧页面操作被拒
+  B2 -> CLI : 用旧页面取消预约②
+  CLI -> BS : CancelReservation(乙, P, 预约②)
+  BS -> RS : FindByID(预约②)
+  RS --> BS : 查无此记录
+  BS -> IS : FindByID(P)
+  IS --> BS : 已确认
+  BS --> CLI : 失败：商品已被约走
+  CLI --> B2 : 提示「商品已被约走」
+end
+
+group 交易完成
+  S -> SS : CompleteTrade(卖家, P)
+  SS -> IS : FindByID(P)，校验归属
+  SS -> IS : Save(商品 P：交易完成)
+  SS -> TS : FindByReservation(预约①) → Save(已完成)
+  SS -> LS : Record(CompleteTrade)
+  SS --> S : 交易完成
+end
+
+note over BS, SS
+  与实验2 设计相比，实现把「商品状态更新」
+  「预约记录删除」都放在服务层内联完成，
+  没有独立的商品状态更新接口；
+  多存储写入没有事务，靠调用顺序保证
+  （失败时会留下部分已写入的状态）
+end note
+
+@enduml

@@ -15,6 +15,8 @@ struct ItemInfo
     std::string Contact;
 };
 
+class SqliteItemStore;
+
 class Item
 {
     public:
@@ -50,5 +52,6 @@ class Item
         bool ViolationOffShelf();
 
     private:
+        friend class SqliteItemStore;
         Item() = default;
 };

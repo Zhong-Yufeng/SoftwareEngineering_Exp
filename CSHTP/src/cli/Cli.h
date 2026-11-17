@@ -11,13 +11,14 @@
 #include"TradeRecord.h"
 #include"OperationLog.h"
 
-#include"InMemoryUserStore.h"
-#include"InMemoryItemStore.h"
-#include"InMemoryReservationStore.h"
-#include"InMemorySellerApplicationStore.h"
-#include"InMemoryAuditRecordStore.h"
-#include"InMemoryTradeRecordStore.h"
-#include"InMemoryOperationLogStore.h"
+#include"SqliteDatabase.h"
+#include"SqliteUserStore.h"
+#include"SqliteItemStore.h"
+#include"SqliteReservationStore.h"
+#include"SqliteSellerApplicationStore.h"
+#include"SqliteAuditRecordStore.h"
+#include"SqliteTradeRecordStore.h"
+#include"SqliteOperationLogStore.h"
 
 #include"LogService.h"
 #include"LoginService.h"
@@ -41,14 +42,15 @@ class Cli
         // ==================== 会话 ====================
         std::optional<User> CurrentUser;   // 空表示未登录
 
-        // ==================== 仓储（内存版） ====================
-        InMemoryUserStore Users;
-        InMemorySellerApplicationStore Applications;
-        InMemoryItemStore Items;
-        InMemoryAuditRecordStore Audits;
-        InMemoryReservationStore Reservations;
-        InMemoryTradeRecordStore Trades;
-        InMemoryOperationLogStore Logs;
+        // ==================== 数据库与仓储（SQLite 版） ====================
+        SqliteDatabase Db;
+        SqliteUserStore Users;
+        SqliteSellerApplicationStore Applications;
+        SqliteItemStore Items;
+        SqliteAuditRecordStore Audits;
+        SqliteReservationStore Reservations;
+        SqliteTradeRecordStore Trades;
+        SqliteOperationLogStore Logs;
 
         // ==================== 服务 ====================
         LogService Log;

@@ -26,6 +26,7 @@ class SellerService
                       ReservationStore& ReservationStoreRef,
                       TradeRecordStore& TradeRecordStoreRef,
                       LogService& LogStore,
+                      Transaction& TransactionRef,
                       ServiceClock Clock = SystemTimeMs);
 
         // ==================== 商品管理 ====================
@@ -89,5 +90,6 @@ class SellerService
         ReservationStore& Reservations;
         TradeRecordStore& Trades;
         LogService& Logs;
+        Transaction& Tx;
         ServiceClock Clock;
 };

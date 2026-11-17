@@ -1,0 +1,70 @@
+@startuml UML组件图
+' 校园二手交易平台 —— 组件图（实现版）
+' 依据：实验2 组件图 + CSHTP 当前代码
+' 与设计版的差别见文件末尾 note
+title 校园二手交易平台 组件图（实现）
+
+skinparam componentStyle rectangle
+skinparam nodesep 50
+skinparam ranksep 80
+
+package "表现层" {
+  [CLI 控制台界面\ncli::Cli] as UI
+}
+
+package "业务层（服务层）" {
+  [LoginService\n登录] as LOGIN
+  [BuyerService\n买家] as BUYER
+  [SellerService\n卖家] as SELLER
+  [AdminService\n管理员] as ADMIN
+  [LogService\n日志] as LOGSVC
+  [ServiceRules\n共享校验函数] as RULES
+}
+
+package "存储层" {
+  [7 个 Store 接口\nUserStore / ItemStore / ReservationStore\nTradeRecordStore / SellerApplicationStore\nAuditRecordStore / OperationLogStore] as STORE
+  [InMemory 实现\n（7 个内存仓储）] as MEM
+}
+
+package "核心层" {
+  [实体类\nUser / Item / Reservation\nTradeRecord / SellerApplication\nAuditRecord / OperationLog] as ENT
+  [枚举 enums.h\n（10 个）] as ENUM
+}
+
+UI --> LOGIN : 登录
+UI --> BUYER : 浏览 / 预约 / 取消
+UI --> SELLER : 发布 / 提交 / 确认 / 完成
+UI --> ADMIN : 认证 / 商品 / 用户 / 日志 / 统计
+
+BUYER ..> RULES
+SELLER ..> RULES
+ADMIN ..> RULES
+BUYER ..> LOGSVC : 写日志
+SELLER ..> LOGSVC : 写日志
+ADMIN ..> LOGSVC : 写日志 / 查日志
+
+LOGIN --> STORE
+BUYER --> STORE
+SELLER --> STORE
+ADMIN --> STORE
+LOGSVC --> STORE
+
+STORE --> MEM
+
+LOGIN ..> ENT
+BUYER ..> ENT
+SELLER ..> ENT
+ADMIN ..> ENT
+LOGSVC ..> ENT
+ENT ..> ENUM
+
+note bottom of UI
+  与实验2 设计版的差异：
+  1) 表现层由「Web 界面」改为命令行界面（cli::Cli），服务层方法保持不变，换 GUI 只替换这一层；
+  2) 统计没有独立组件（实验2 的 STAT）：平台统计在 AdminService::GetPlatformStats，卖家统计在 SellerService::GetSellerStats；
+  3) 日志只增不改不删，「发起预约」「确认预约」「预约记录删除」「完成交易」等记录供统计模块统计预约量；
+  4) ServiceRules 的共享校验只判断账号存在、未封禁、商品归属与可见性；身份（买家/卖家/管理员）由服务类名称约束，不在校验里判断（service\AGENTS.md）；
+  5) 未接数据库：全部数据存放在进程内存，程序退出即丢失（实验3 未做持久化）。
+end note
+
+@enduml

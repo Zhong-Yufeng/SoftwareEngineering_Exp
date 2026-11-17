@@ -3,6 +3,7 @@
 #include<cmath>
 #include<cstdlib>
 #include<ctime>
+#include<filesystem>
 #include<iomanip>
 #include<iostream>
 #include<sstream>
@@ -39,11 +40,18 @@ namespace
 }
 
 Cli::Cli()
-    : Log(Logs),
+    : Users(Db),
+      Applications(Db),
+      Items(Db),
+      Audits(Db),
+      Reservations(Db),
+      Trades(Db),
+      Logs(Db),
+      Log(Logs),
       Login(Users),
-      Buyer(Users, Applications, Items, Reservations, Trades, Log),
-      Seller(Users, Items, Reservations, Trades, Log),
-      Admin(Users, Applications, Items, Audits, Reservations, Trades, Log)
+      Buyer(Users, Applications, Items, Reservations, Trades, Log, Db),
+      Seller(Users, Items, Reservations, Trades, Log, Db),
+      Admin(Users, Applications, Items, Audits, Reservations, Trades, Log, Db)
 {
 }
 
@@ -55,6 +63,16 @@ int Cli::run()
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 #endif
+
+    // 数据库文件放在程序工作目录下的 data 目录里，首次运行时自动创建
+    std::error_code Ignored;
+    std::filesystem::create_directories("data", Ignored);
+    if (!Db.Open("data/cshtp.db"))
+    {
+        std::cout << "\n[错误] 无法打开数据库 data/cshtp.db：" << Db.LastError() << "\n";
+        return 1;
+    }
+
     SeedDemoData();
     while (true)
     {
@@ -85,6 +103,12 @@ int Cli::run()
 
 void Cli::SeedDemoData()
 {
+    // 数据库里已经有账号就不再重复写入，避免每次启动都把演示数据插一遍
+    if (Users.Size() > 0)
+    {
+        return;
+    }
+
     std::string Error;
     const auto Note = [](const std::string& Text)
     {

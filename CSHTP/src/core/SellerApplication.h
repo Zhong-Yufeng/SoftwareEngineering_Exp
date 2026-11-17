@@ -3,6 +3,8 @@
 #include<string>
 #include"enums.h"
 
+class SqliteSellerApplicationStore;
+
 // 卖家认证申请：一人一条，创建即待审核
 class SellerApplication
 {
@@ -24,5 +26,6 @@ class SellerApplication
         bool Reject(const std::string& Reason, const std::string& Reviewer, long long NowMs);
 
     private:
+        friend class SqliteSellerApplicationStore;
         SellerApplication() = default;
 };

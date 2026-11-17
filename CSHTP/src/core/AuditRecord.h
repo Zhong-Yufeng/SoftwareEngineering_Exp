@@ -3,6 +3,8 @@
 #include<string>
 #include"enums.h"
 
+class SqliteAuditRecordStore;
+
 // 一次商品审核的留痕，商品每次审核一条
 class AuditRecord
 {
@@ -21,5 +23,6 @@ class AuditRecord
                                                  const std::string& Reason);
 
     private:
+        friend class SqliteAuditRecordStore;
         AuditRecord() = default;
 };

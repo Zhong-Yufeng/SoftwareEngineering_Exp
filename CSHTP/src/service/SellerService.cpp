@@ -30,12 +30,14 @@ SellerService::SellerService(UserStore& UserStoreRef,
                              ReservationStore& ReservationStoreRef,
                              TradeRecordStore& TradeRecordStoreRef,
                              LogService& LogStore,
+                             Transaction& TransactionRef,
                              ServiceClock ClockSource)
     : Users(UserStoreRef),
       Items(ItemStoreRef),
       Reservations(ReservationStoreRef),
       Trades(TradeRecordStoreRef),
       Logs(LogStore),
+      Tx(TransactionRef),
       Clock(ClockSource)
 {
 }
@@ -88,6 +90,12 @@ bool SellerService::SubmitForReview(const std::string& SellerID,
         SetError(Error, "仅草稿或驳回商品可提交审核");
         return false;
     }
+    TransactionScope Unit(Tx);
+    if (!Unit.Ready())
+    {
+        SetError(Error, "数据库事务开启失败");
+        return false;
+    }
     if (!Items.Save(Goods.value()))
     {
         SetError(Error, "商品保存失败");
@@ -96,6 +104,11 @@ bool SellerService::SubmitForReview(const std::string& SellerID,
 
     Logs.Record(LogType::SubmitReview, SellerID, ServiceObject::Item,
                 ItemID, "提交商品审核");
+    if (!Unit.Commit())
+    {
+        SetError(Error, "商品保存失败");
+        return false;
+    }
     return true;
 }
 
@@ -183,6 +196,12 @@ bool SellerService::ConfirmReservation(const std::string& SellerID,
         return false;
     }
 
+    TransactionScope Unit(Tx);
+    if (!Unit.Ready())
+    {
+        SetError(Error, "数据库事务开启失败");
+        return false;
+    }
     if (!Items.Save(Goods.value()) || !Reservations.Save(Confirmed))
     {
         SetError(Error, "预约确认保存失败");
@@ -227,6 +246,11 @@ bool SellerService::ConfirmReservation(const std::string& SellerID,
 
     Logs.Record(LogType::ConfirmReservation, SellerID, ServiceObject::Reservation,
                 ReservationID, "确认预约");
+    if (!Unit.Commit())
+    {
+        SetError(Error, "预约确认保存失败");
+        return false;
+    }
     return true;
 }
 
@@ -273,6 +297,12 @@ bool SellerService::CompleteTrade(const std::string& SellerID,
         return false;
     }
 
+    TransactionScope Unit(Tx);
+    if (!Unit.Ready())
+    {
+        SetError(Error, "数据库事务开启失败");
+        return false;
+    }
     if (!Items.Save(Goods.value()))
     {
         SetError(Error, "交易状态保存失败");
@@ -287,6 +317,11 @@ bool SellerService::CompleteTrade(const std::string& SellerID,
 
     Logs.Record(LogType::CompleteTrade, SellerID, ServiceObject::Item,
                 ItemID, "完成交易");
+    if (!Unit.Commit())
+    {
+        SetError(Error, "交易记录保存失败");
+        return false;
+    }
     return true;
 }
 

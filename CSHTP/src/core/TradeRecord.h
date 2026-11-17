@@ -5,6 +5,8 @@
 #include"Reservation.h"
 #include"enums.h"
 
+class SqliteTradeRecordStore;
+
 // 交易记录：卖家确认预约那一刻生成的凭证，买家「约成了什么」靠它回答。
 // 商品与预约随后可能被下架、删除，所以标题、价格、联系方式都存值拷贝。
 // 记录只增不删，生命周期靠 Status 推进：进行中 → 已完成 / 已作废。
@@ -45,5 +47,6 @@ class TradeRecord
         bool IsParticipant(const std::string& UserID) const;
 
     private:
+        friend class SqliteTradeRecordStore;
         TradeRecord() = default;
 };

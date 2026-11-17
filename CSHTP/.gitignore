@@ -10,6 +10,11 @@ out/
 *.bat
 # 数据库凭据
 config/db.ini
+# 运行时数据库
+data/
+*.db
+*.db-wal
+*.db-shm
 
 # 编辑器
 .vs/

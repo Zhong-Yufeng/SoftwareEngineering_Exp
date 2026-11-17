@@ -45,6 +45,7 @@ namespace
         InMemoryOperationLogStore Logs;
         long long Now = 1000;
         std::string Error;
+        NullTransaction Tx;
 
         LogService LogsSvc;
         LoginService Logins;
@@ -55,10 +56,10 @@ namespace
         Fixture()
             : LogsSvc(Logs, [this]() { return Now; }),
               Logins(Users),
-              Buyers(Users, Applications, Items, Reservations, Trades, LogsSvc, [this]() { return Now; }),
-              Sellers(Users, Items, Reservations, Trades, LogsSvc, [this]() { return Now; }),
+              Buyers(Users, Applications, Items, Reservations, Trades, LogsSvc, Tx, [this]() { return Now; }),
+              Sellers(Users, Items, Reservations, Trades, LogsSvc, Tx, [this]() { return Now; }),
               Admins(Users, Applications, Items, Audits, Reservations, Trades,
-                     LogsSvc, [this]() { return Now; })
+                     LogsSvc, Tx, [this]() { return Now; })
         {
         }
 
