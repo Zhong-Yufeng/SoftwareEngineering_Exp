@@ -86,7 +86,9 @@ namespace
 
         std::string Register(const std::string& Phone, const std::string& StdNo, const std::string& Nickname)
         {
-            auto Created = Buyers.Register(Phone, StdNo, "123456", Nickname, "10001", &Error);
+            // 学号必填；用例只关心手机号时，按手机号派生一个不重复的学号
+            const std::string UseStdNo = StdNo.empty() ? ("STD" + Phone) : StdNo;
+            auto Created = Buyers.Register(Phone, UseStdNo, "123456", Nickname, "10001", &Error);
             Check(Created.has_value(), "fixture: 注册 " + Nickname);
             if (!Created)
             {
@@ -141,27 +143,30 @@ void RunServiceTests()
     {
         Fixture F;
         const std::string AdminID = F.MakeAdmin();
-        const std::string BuyerID = F.Register("13800002001", "", "买家");
+        const std::string BuyerID = F.Register("13800002001", "241220001", "买家");
         const std::string SellerID = F.MakeSeller("13900002001", "卖家");
-        const std::string StdBuyerID = F.Register("", "241220170", "学号买家");
 
-        Check(!BuyerID.empty() && !SellerID.empty() && !StdBuyerID.empty(), "Account: 注册与认证链路可用");
+        Check(!BuyerID.empty() && !SellerID.empty(), "Account: 注册与认证链路可用");
         Check(F.Users.FindByID(SellerID)->UserRole == Role::Seller, "Account: 审核通过后成为卖家");
         Check(!F.Admins.ApproveApplication(AdminID, "app-missing", &F.Error),
               "Account: 不存在的申请不能审核");
         Check(F.Error.find("申请不存在") != std::string::npos, "Account: 申请不存在提示");
-        Check(F.Users.FindByID(StdBuyerID)->UserRole == Role::Buyer, "Account: 学号注册仍是买家");
 
         Check(F.Logins.Login("13800002001", "123456", &F.Error).has_value(), "Account: 手机号登录");
-        Check(F.Logins.Login("241220170", "123456", &F.Error).has_value(), "Account: 学号登录");
+        Check(!F.Logins.Login("241220001", "123456", &F.Error).has_value(), "Account: 学号不是登录账号");
         Check(!F.Logins.Login("13800002001", "wrong", &F.Error).has_value(), "Account: 密码错误登录失败");
         Check(!F.Logins.Login("13899999999", "123456", &F.Error).has_value(), "Account: 不存在账号登录失败");
-        Check(!F.Buyers.Register("13800002001", "", "123456", "重复", "10001", &F.Error).has_value(),
+
+        Check(!F.Buyers.Register("13800002001", "241220900", "123456", "重复", "10001", &F.Error).has_value(),
               "Account: 手机号不能重复注册");
-        Check(!F.Buyers.Register("", "241220170", "123456", "重复", "10001", &F.Error).has_value(),
+        Check(F.Error.find("手机号已被注册") != std::string::npos, "Account: 手机号重复提示");
+        Check(!F.Buyers.Register("13800002002", "241220001", "123456", "重复", "10001", &F.Error).has_value(),
               "Account: 学号不能重复注册");
-        Check(!F.Buyers.Register("", "", "123456", "无账号", "10001", &F.Error).has_value(),
-              "Account: 手机号与学号不能都为空");
+        Check(F.Error.find("学号已被注册") != std::string::npos, "Account: 学号重复提示");
+        Check(!F.Buyers.Register("", "241220901", "123456", "无手机号", "10001", &F.Error).has_value(),
+              "Account: 缺手机号不能注册");
+        Check(!F.Buyers.Register("13800002003", "", "123456", "无学号", "10001", &F.Error).has_value(),
+              "Account: 缺学号不能注册");
 
         Check(F.Buyers.ApplyForSeller(BuyerID, "买家", &F.Error).has_value(),
               "Account: 买家可申请卖家");
@@ -184,9 +189,9 @@ void RunServiceTests()
               "Account: 已处理的申请不能再次审核");
         Check(F.Error.find("待审核") != std::string::npos, "Account: 已处理申请提示");
 
-        Check(F.Admins.ListUsers(AdminID, &F.Error).size() == 4, "Account: 用户列表数量");
+        Check(F.Admins.ListUsers(AdminID, &F.Error).size() == 3, "Account: 用户列表数量");
         Check(F.Admins.ListApplications().size() == 2, "Account: 申请列表数量");
-        Check(F.Logs.CountByType(LogType::Register) == 3, "Account: 注册日志数量");
+        Check(F.Logs.CountByType(LogType::Register) == 2, "Account: 注册日志数量");
 
         Check(F.Logins.Login("admin", "admin123", &F.Error).has_value(), "Account: 统一登录入口可登录管理员");
         Check(!F.Logins.Login("admin", "wrong", &F.Error).has_value(), "Account: 管理员密码错误登录失败");
@@ -195,7 +200,7 @@ void RunServiceTests()
               "Account: 发放管理员账号");
         Check(!F.Admins.IssueAdminAccount("admin-2", "admin456", "重复", &F.Error).has_value(),
               "Account: 管理员编号不能重复");
-        Check(F.Admins.ListUsers(AdminID, &F.Error).size() == 5, "Account: 发放后用户列表数量");
+        Check(F.Admins.ListUsers(AdminID, &F.Error).size() == 4, "Account: 发放后用户列表数量");
 
         LogQuery AllLogs;
         std::vector<OperationLog> Found;
@@ -208,7 +213,7 @@ void RunServiceTests()
 
         LogQuery ByType;
         ByType.Type = LogType::Register;
-        Check(F.Admins.QueryLogs(AdminID, ByType, &Found, &F.Error) && Found.size() == 3,
+        Check(F.Admins.QueryLogs(AdminID, ByType, &Found, &F.Error) && Found.size() == 2,
               "Log: 按类型查询");
         Check(!Found.empty() && Found.front().Type == LogType::Register, "Log: 类型过滤结果正确");
 
@@ -404,5 +409,75 @@ void RunServiceTests()
         Check(F.Logs.CountByType(LogType::ConfirmReservation) == 1, "Trade: 确认预约日志");
         Check(F.Logs.CountByType(LogType::DeleteReservation) == 1, "Trade: 删除落选预约日志");
         Check(F.Logs.CountByType(LogType::CompleteTrade) == 1, "Trade: 完成交易日志");
+    }
+
+    // 商品维护、违规处置、封禁解封与资料修改
+    {
+        Fixture F;
+        const std::string AdminID = F.MakeAdmin();
+        const std::string SellerID = F.MakeSeller("13900003001", "卖家三十");
+        const std::string BuyerID = F.Register("13800003001", "", "买家三十");
+
+        const auto Target = F.PublishItem(SellerID, "待改商品", 2000);
+        Check(Target.has_value(), "Modify: 商品已发布");
+        if (Target.has_value())
+        {
+            const ItemInfo Changed = MakeInfo("改后商品", 2500);
+            Check(F.Sellers.ModifyItem(SellerID, Target->ItemID, Changed, &F.Error),
+                  "Modify: 已发布商品可修改");
+            const auto AfterModify = F.Items.FindByID(Target->ItemID);
+            Check(AfterModify->Title == "改后商品" && AfterModify->PriceCents == 2500,
+                  "Modify: 内容已更新");
+            Check(AfterModify->Status == ItemStatus::Published, "Modify: 修改不改变发布状态");
+
+            Check(!F.Sellers.ModifyItem(BuyerID, Target->ItemID, Changed, &F.Error),
+                  "Modify: 非本人不能修改");
+            Check(F.Error.find("只能修改自己的商品") != std::string::npos, "Modify: 非本人提示");
+
+            Check(F.Buyers.Reserve(BuyerID, Target->ItemID, &F.Error).has_value(), "OffShelf: 预约成功");
+            Check(F.Sellers.OffShelfItem(SellerID, Target->ItemID, &F.Error),
+                  "OffShelf: 卖家可下架已发布商品");
+            Check(F.Items.FindByID(Target->ItemID)->Status == ItemStatus::OffShelf,
+                  "OffShelf: 状态转为已下架");
+            Check(F.Reservations.ListByItem(Target->ItemID).empty(), "OffShelf: 预约已清除");
+            Check(F.Logs.CountByType(LogType::OffShelf) == 1, "OffShelf: 写了下架日志");
+            Check(!F.Sellers.OffShelfItem(SellerID, Target->ItemID, &F.Error), "OffShelf: 重复下架失败");
+        }
+
+        const auto Violating = F.PublishItem(SellerID, "违规商品", 3000);
+        Check(Violating.has_value(), "Violation: 商品已发布");
+        if (Violating.has_value())
+        {
+            Check(!F.Admins.ViolationOffShelfItem(AdminID, Violating->ItemID, "", &F.Error),
+                  "Violation: 理由必填");
+            Check(F.Admins.ViolationOffShelfItem(AdminID, Violating->ItemID, "违规内容", &F.Error),
+                  "Violation: 可违规下架");
+            Check(F.Items.FindByID(Violating->ItemID)->Status == ItemStatus::ViolationOffShelf,
+                  "Violation: 状态转为违规下架");
+            Check(F.Logs.CountByType(LogType::ViolationHandling) == 1, "Violation: 写了违规日志");
+        }
+
+        const auto Third = F.PublishItem(SellerID, "封禁商品", 1500);
+        Check(Third.has_value(), "Ban: 商品已发布");
+        Check(!F.Admins.BanUser(AdminID, AdminID, "原因", &F.Error), "Ban: 不能封禁管理员");
+        Check(F.Admins.BanUser(AdminID, SellerID, "违规经营", &F.Error), "Ban: 可封禁卖家");
+        Check(F.Users.FindByID(SellerID)->Status == AccountStatus::Banned, "Ban: 状态已封禁");
+        if (Third.has_value())
+        {
+            Check(F.Items.FindByID(Third->ItemID)->Status == ItemStatus::ViolationOffShelf,
+                  "Ban: 名下在售商品违规下架");
+        }
+        Check(!F.Sellers.OffShelfItem(SellerID, Third->ItemID, &F.Error), "Ban: 封禁后不能再操作");
+        Check(F.Error.find("封禁") != std::string::npos, "Ban: 封禁提示带原因");
+
+        Check(F.Admins.UnbanUser(AdminID, SellerID, &F.Error), "Unban: 可解封");
+        Check(F.Users.FindByID(SellerID)->Status == AccountStatus::Normal, "Unban: 状态恢复正常");
+        Check(!F.Admins.UnbanUser(AdminID, SellerID, &F.Error), "Unban: 重复解封失败");
+
+        Check(!F.Buyers.UpdateProfile(BuyerID, "", "10002", &F.Error), "Profile: 昵称不能为空");
+        Check(F.Buyers.UpdateProfile(BuyerID, "新昵称", "20002", &F.Error), "Profile: 可修改资料");
+        const auto Updated = F.Users.FindByID(BuyerID);
+        Check(Updated->Nickname == "新昵称" && Updated->QQNo == "20002", "Profile: 资料已更新");
+        Check(!F.Buyers.UpdateProfile("user-missing", "x", "y", &F.Error), "Profile: 用户不存在失败");
     }
 }

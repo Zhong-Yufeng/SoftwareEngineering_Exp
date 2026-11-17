@@ -162,21 +162,47 @@ bool Item::CompleteTrade()
     return true;
 }
 
-// ----- 以下函数暂未实现 ----------------------------------------
-bool Item::Modify(const ItemInfo&)
+bool Item::Modify(const ItemInfo& Info)
 {
-    // TODO
-    return false;
+    // 交易中、已成交、已下架的商品不再接受内容修改
+    if (Status != ItemStatus::Draft && Status != ItemStatus::Rejected &&
+        Status != ItemStatus::Published)
+    {
+        return false;
+    }
+    if (!IsValidInfo(Info))
+    {
+        return false;
+    }
+
+    Title = Info.Title;
+    Description = Info.Description;
+    ItemCategory = Info.ItemCategory;
+    PriceCents = Info.PriceCents;
+    ItemCondition = Info.ItemCondition;
+    TradeLocation = Info.TradeLocation;
+    Contact = Info.Contact;
+    return true;
 }
 
 bool Item::OffShelf()
 {
-    // TODO
-    return false;
+    if (Status != ItemStatus::Published && Status != ItemStatus::Confirmed)
+    {
+        return false;
+    }
+
+    Status = ItemStatus::OffShelf;
+    return true;
 }
 
 bool Item::ViolationOffShelf()
 {
-    // TODO
-    return false;
+    if (Status != ItemStatus::Published && Status != ItemStatus::Confirmed)
+    {
+        return false;
+    }
+
+    Status = ItemStatus::ViolationOffShelf;
+    return true;
 }

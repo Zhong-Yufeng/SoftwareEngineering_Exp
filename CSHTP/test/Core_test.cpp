@@ -27,21 +27,29 @@ namespace
 void RunCoreTests()
 {
     {
-        auto UserA = User::create("13800000001", "", "123456", "小明", "10001");
-        Check(UserA.has_value(), "User: 只给手机号可注册");
+        auto UserA = User::create("13800000001", "241220001", "123456", "小明", "10001");
+        Check(UserA.has_value(), "User: 手机号与学号齐全可注册");
         Check(UserA && UserA->UserID.empty(), "User: 编号由存储层分配");
         Check(UserA && UserA->UserRole == Role::Buyer, "User: 新用户是买家");
+        Check(UserA && UserA->UserPhone == "13800000001", "User: 手机号被记录");
+        Check(UserA && UserA->UserStdNo == "241220001", "User: 学号被记录");
 
         auto NoAccount = User::create("", "", "123456", "小明", "10001");
         Check(!NoAccount.has_value(), "User: 手机号和学号不能都为空");
 
-        auto ShortPassword = User::create("13800000002", "", "12345", "小明", "10001");
+        auto NoPhone = User::create("", "241220002", "123456", "小明", "10001");
+        Check(!NoPhone.has_value(), "User: 缺手机号拒绝");
+
+        auto NoStdNo = User::create("13800000005", "", "123456", "小明", "10001");
+        Check(!NoStdNo.has_value(), "User: 缺学号拒绝");
+
+        auto ShortPassword = User::create("13800000002", "241220003", "12345", "小明", "10001");
         Check(!ShortPassword.has_value(), "User: 密码少于 6 位拒绝");
 
-        auto NoNickname = User::create("13800000003", "", "123456", "", "10001");
+        auto NoNickname = User::create("13800000003", "241220004", "123456", "", "10001");
         Check(!NoNickname.has_value(), "User: 昵称为空拒绝");
 
-        auto NoContact = User::create("13800000004", "", "123456", "小明", "");
+        auto NoContact = User::create("13800000004", "241220005", "123456", "小明", "");
         Check(!NoContact.has_value(), "User: 联系方式为空拒绝");
     }
 
@@ -53,7 +61,7 @@ void RunCoreTests()
     }
 
     {
-        auto UserA = User::create("13800000010", "", "123456", "小明", "10001");
+        auto UserA = User::create("13800000010", "241220010", "123456", "小明", "10001");
         Check(UserA.has_value(), "User: 状态流转前置");
         if (UserA)
         {
@@ -66,6 +74,28 @@ void RunCoreTests()
             Check(UserA->Unban(), "User: 解封成功");
             Check(UserA->Status == AccountStatus::Normal && !UserA->Reason.has_value(), "User: 解封后状态正常");
             Check(!UserA->Unban(), "User: 正常用户不能再次解封");
+        }
+    }
+
+    {
+        auto UserA = User::create("13800000020", "241220020", "123456", "小明", "10001");
+        Check(UserA.has_value(), "User: 资料修改前置");
+        if (UserA)
+        {
+            Check(!UserA->UpdateProfile("", "10002"), "User: 昵称为空不能修改资料");
+            Check(!UserA->UpdateProfile("新昵称", ""), "User: 联系方式为空不能修改资料");
+            Check(UserA->UpdateProfile("新昵称", "10002"), "User: 合法资料可修改");
+            Check(UserA->Nickname == "新昵称" && UserA->QQNo == "10002", "User: 资料已更新");
+
+            Check(!UserA->ChangePassword("wrong", "654321"), "User: 旧密码错误不能修改");
+            Check(!UserA->ChangePassword("123456", "12345"), "User: 新密码少于 6 位拒绝");
+            Check(UserA->ChangePassword("123456", "654321"), "User: 旧密码正确可改密码");
+            Check(UserA->Password == "654321", "User: 密码已更新");
+
+            Check(UserA->UserID.empty(), "User: 未分编号前不能重复分配");
+            Check(UserA->AssignID("user-9"), "User: 编号为空时可分配编号");
+            Check(UserA->UserID == "user-9", "User: 编号已写入");
+            Check(!UserA->AssignID("user-10"), "User: 已有编号不能再分配");
         }
     }
 

@@ -29,17 +29,22 @@ std::optional<User> BuyerService::Register(const std::string& Phone,
 {
     ClearError(Error);
 
-    if (Phone.empty() && StdNo.empty())
+    if (Phone.empty())
     {
-        SetError(Error, "手机号与学号至少填写一项");
+        SetError(Error, "手机号为登录账号，必须填写");
         return std::nullopt;
     }
-    if (!Phone.empty() && Users.FindByPhone(Phone).has_value())
+    if (StdNo.empty())
+    {
+        SetError(Error, "学号必须填写");
+        return std::nullopt;
+    }
+    if (Users.FindByPhone(Phone).has_value())
     {
         SetError(Error, "手机号已被注册");
         return std::nullopt;
     }
-    if (!StdNo.empty() && Users.FindByStdNo(StdNo).has_value())
+    if (Users.FindByStdNo(StdNo).has_value())
     {
         SetError(Error, "学号已被注册");
         return std::nullopt;
@@ -339,12 +344,35 @@ std::optional<SellerApplication> BuyerService::FindApplication(const std::string
     return Applications.FindByID(ApplicationID);
 }
 
-// ----- 以下函数暂未实现 ----------------------------------------
-bool BuyerService::UpdateProfile(const std::string&,
-                                 const std::string&,
-                                 const std::string&,
-                                 std::string*)
+bool BuyerService::UpdateProfile(const std::string& UserID,
+                                 const std::string& Nickname,
+                                 const std::string& QQNo,
+                                 std::string* Error)
 {
-    // TODO
-    return false;
+    ClearError(Error);
+
+    if (!ServiceRules::RequireBuyer(Users, UserID, Error))
+    {
+        return false;
+    }
+
+    auto Target = Users.FindByID(UserID);
+    if (!Target.has_value())
+    {
+        SetError(Error, "用户不存在");
+        return false;
+    }
+
+    User Updated = Target.value();
+    if (!Updated.UpdateProfile(Nickname, QQNo))
+    {
+        SetError(Error, "昵称与联系方式不能为空");
+        return false;
+    }
+    if (!Users.Save(Updated))
+    {
+        SetError(Error, "资料保存失败");
+        return false;
+    }
+    return true;
 }

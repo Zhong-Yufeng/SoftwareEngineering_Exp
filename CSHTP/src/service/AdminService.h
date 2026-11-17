@@ -113,7 +113,6 @@ class AdminService
         // 完成交易量按交易记录「已完成」状态统计（等同于商品状态为交易完成）
         PlatformStats GetPlatformStats(long long FromMs, long long ToMs) const; 
 
-        // ----- 以下函数暂未实现 ----------------------------------------
         bool BanUser(const std::string& AdminID,
                      const std::string& TargetUserID,
                      const std::string& Reason,

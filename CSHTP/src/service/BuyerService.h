@@ -26,7 +26,7 @@ class BuyerService
 
         // ==================== 注册与资料 ====================
 
-        // 买家自助注册：手机号与学号至少填一个，都不能与已有账号重复
+        // 买家自助注册：手机号（登录账号）与学号均为必填，都不能与已有账号重复
         std::optional<User> Register(const std::string& Phone,
                                      const std::string& StdNo,
                                      const std::string& Password,
@@ -85,7 +85,6 @@ class BuyerService
                                                           const std::string& ReservationID,
                                                           std::string* Error = nullptr) const;
 
-        // ----- 以下函数暂未实现 ----------------------------------------
         bool UpdateProfile(const std::string& UserID,
                            const std::string& Nickname,
                            const std::string& QQNo,

@@ -18,11 +18,8 @@ std::optional<User> LoginService::Login(const std::string& Account,
         return std::nullopt;
     }
 
-    std::optional<User> Target = Users.FindByPhone(Account);
-    if (!Target.has_value())
-    {
-        Target = Users.FindByStdNo(Account);
-    }
+    // 登录账号固定为手机号；管理员账号的手机号就是它的工号
+    auto Target = Users.FindByPhone(Account);
     if (!Target.has_value() || Target->Password != Password)
     {
         SetError(Error, "账号或密码错误");

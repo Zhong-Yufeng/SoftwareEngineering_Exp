@@ -10,7 +10,7 @@ class User
 {
     public:
         std::string UserID;                     // 由存储层分配
-        std::string UserPhone;
+        std::string UserPhone;                  // 登录账号
         std::string UserStdNo;
         std::string Password;
         std::string Nickname;
@@ -33,7 +33,6 @@ class User
         bool Ban(const std::string& BanReason);
         bool Unban();
 
-        // ----- 以下函数暂未实现 ----------------------------------------
         bool ChangePassword(const std::string& OldPassword, const std::string& NewPassword);
         bool UpdateProfile(const std::string& NewNickname, const std::string& NewQQNo);
         bool AssignID(const std::string& NewID);

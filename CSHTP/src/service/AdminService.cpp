@@ -386,29 +386,175 @@ bool AdminService::QueryLogs(const std::string&,
     return true;
 }
 
-// ----- 以下函数暂未实现 ----------------------------------------
-bool AdminService::BanUser(const std::string&,
-                           const std::string&,
-                           const std::string&,
-                           std::string*)
+bool AdminService::BanUser(const std::string& AdminID,
+                           const std::string& TargetUserID,
+                           const std::string& Reason,
+                           std::string* Error)
 {
-    // TODO
-    return false;
+    ClearError(Error);
+
+    if (Reason.empty())
+    {
+        SetError(Error, "封禁理由不能为空");
+        return false;
+    }
+
+    const auto Target = Users.FindByID(TargetUserID);
+    if (!Target.has_value())
+    {
+        SetError(Error, "用户不存在");
+        return false;
+    }
+    if (Target->UserRole == Role::Admin)
+    {
+        SetError(Error, "不能封禁管理员账号");
+        return false;
+    }
+
+    User Banned = Target.value();
+    if (!Banned.Ban(Reason))
+    {
+        SetError(Error, "仅正常状态的账号可封禁");
+        return false;
+    }
+
+    TransactionScope Unit(Tx);
+    if (!Unit.Ready())
+    {
+        SetError(Error, "数据库事务开启失败");
+        return false;
+    }
+    if (!Users.Save(Banned))
+    {
+        SetError(Error, "账号保存失败");
+        return false;
+    }
+
+    // 封禁级联（REQ-016）：名下在售商品违规下架、进行中的交易作废、相关预约删除
+    ItemQuery Cond;
+    Cond.SellerID = TargetUserID;
+    for (const Item& Mine : Items.Query(Cond))
+    {
+        if (Mine.Status != ItemStatus::Published && Mine.Status != ItemStatus::Confirmed)
+        {
+            continue;
+        }
+
+        Item Goods = Mine;
+        if (!Goods.ViolationOffShelf() || !Items.Save(Goods))
+        {
+            SetError(Error, "用户商品下架失败");
+            return false;
+        }
+        ServiceRules::CancelTradesByItem(Trades, Goods.ItemID, "卖家账号被封禁", Clock());
+        Reservations.RemoveByItem(Goods.ItemID);
+    }
+
+    // 被封禁用户作为买家留下的预约同样失效
+    for (const Reservation& Order : Reservations.ListByBuyer(TargetUserID))
+    {
+        Reservations.Remove(Order.ReservationID);
+    }
+
+    Logs.Record(LogType::Ban, AdminID, ServiceObject::User, TargetUserID, "封禁账号：" + Reason);
+    if (!Unit.Commit())
+    {
+        SetError(Error, "账号保存失败");
+        return false;
+    }
+    return true;
 }
 
-bool AdminService::UnbanUser(const std::string&,
-                             const std::string&,
-                             std::string*)
+bool AdminService::UnbanUser(const std::string& AdminID,
+                             const std::string& TargetUserID,
+                             std::string* Error)
 {
-    // TODO
-    return false;
+    ClearError(Error);
+
+    const auto Target = Users.FindByID(TargetUserID);
+    if (!Target.has_value())
+    {
+        SetError(Error, "用户不存在");
+        return false;
+    }
+
+    User Normal = Target.value();
+    if (!Normal.Unban())
+    {
+        SetError(Error, "仅已封禁的账号可解封");
+        return false;
+    }
+
+    TransactionScope Unit(Tx);
+    if (!Unit.Ready())
+    {
+        SetError(Error, "数据库事务开启失败");
+        return false;
+    }
+    if (!Users.Save(Normal))
+    {
+        SetError(Error, "账号保存失败");
+        return false;
+    }
+
+    Logs.Record(LogType::Unban, AdminID, ServiceObject::User, TargetUserID, "解封账号");
+    if (!Unit.Commit())
+    {
+        SetError(Error, "账号保存失败");
+        return false;
+    }
+    return true;
 }
 
-bool AdminService::ViolationOffShelfItem(const std::string&,
-                                         const std::string&,
-                                         const std::string&,
-                                         std::string*)
+bool AdminService::ViolationOffShelfItem(const std::string& AdminID,
+                                         const std::string& ItemID,
+                                         const std::string& Reason,
+                                         std::string* Error)
 {
-    // TODO
-    return false;
+    ClearError(Error);
+
+    if (Reason.empty())
+    {
+        SetError(Error, "违规理由不能为空");
+        return false;
+    }
+
+    const auto Found = Items.FindByID(ItemID);
+    if (!Found.has_value())
+    {
+        SetError(Error, "商品不存在");
+        return false;
+    }
+
+    Item Goods = Found.value();
+    if (!Goods.ViolationOffShelf())
+    {
+        SetError(Error, "仅已发布或已确认的商品可违规下架");
+        return false;
+    }
+
+    TransactionScope Unit(Tx);
+    if (!Unit.Ready())
+    {
+        SetError(Error, "数据库事务开启失败");
+        return false;
+    }
+    if (!Items.Save(Goods))
+    {
+        SetError(Error, "商品保存失败");
+        return false;
+    }
+
+    // 违规下架后商品不再交易：进行中的交易作废，相关预约删除
+    ServiceRules::CancelTradesByItem(Trades, ItemID, "商品违规下架", Clock());
+    Reservations.RemoveByItem(ItemID);
+
+    Logs.Record(LogType::ViolationHandling, AdminID, ServiceObject::Item,
+                ItemID, "违规下架：" + Reason);
+    if (!Unit.Commit())
+    {
+        SetError(Error, "商品保存失败");
+        return false;
+    }
+    return true;
 }

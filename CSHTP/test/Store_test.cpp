@@ -47,7 +47,8 @@ namespace
 
     User MakeUser(const std::string& Phone, const std::string& Nickname)
     {
-        return User::create(Phone, "", "123456", Nickname, "10001").value();
+        // 手机号与学号都是必填，学号按手机号派生，保证同一用户的两个账号互不相同
+        return User::create(Phone, "STD" + Phone, "123456", Nickname, "10001").value();
     }
 
     OperationLog MakeLog(LogType Type,

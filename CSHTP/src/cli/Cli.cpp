@@ -212,8 +212,10 @@ void Cli::SeedDemoData()
 
 bool Cli::LoginScreen()
 {
+    ClearScreen();
+    ShowAccounts();     // 演示账号固定显示在登录页顶部
+    std::cout << "\n";
     ShowBanner();
-    ShowAccounts();
     std::cout << " 1. 登录\n"
               << " 2. 注册\n"
               << " 0. 退出\n";
@@ -235,8 +237,8 @@ bool Cli::LoginScreen()
     }
 
     Section("登录");
-    std::cout << "买家可用手机号或学号登录；管理员用管理员账号登录。\n";
-    const std::string Account = AskRequired("账号");
+    std::cout << "买家、卖家使用注册时的手机号登录；管理员使用管理员账号登录。\n";
+    const std::string Account = AskRequired("手机号（管理员填管理员账号）");
     const std::string Password = AskRequired("密码");
 
     std::string Error;
@@ -256,14 +258,15 @@ bool Cli::LoginScreen()
 
 void Cli::RegisterFlow()
 {
+    ClearScreen();
     Section("注册");
-    std::cout << "昵称、QQ、密码为必填；手机号与学号至少填写一项。\n";
+    std::cout << "昵称、QQ、密码、手机号、学号均为必填，手机号是登录账号。\n";
 
     const std::string Nickname = AskRequired("昵称");
     const std::string QQNo = AskRequired("QQ 号");
     const std::string Password = AskRequired("密码（至少 6 位）");
-    const std::string Phone = Ask("手机号（可留空）");
-    const std::string StdNo = Ask("学号（可留空）");
+    const std::string Phone = AskRequired("手机号（登录账号）");
+    const std::string StdNo = AskRequired("学号");
 
     std::string Error;
     const auto Created = Buyer.Register(Phone, StdNo, Password, Nickname, QQNo, &Error);
@@ -273,7 +276,7 @@ void Cli::RegisterFlow()
     }
     else
     {
-        ShowNotice("注册成功，请返回登录页用手机号或学号登录。");
+        ShowNotice("注册成功，请返回登录页用手机号登录。");
     }
     Pause();
 }
@@ -284,6 +287,7 @@ void Cli::TraderMenu()
 {
     while (true)
     {
+        ClearScreen();
         ShowBanner();
         std::cout << "当前用户：" << CurrentUser->Nickname
                   << "（" << RoleText(CurrentUser->UserRole) << "）"
@@ -294,18 +298,20 @@ void Cli::TraderMenu()
         std::cout << " 1. 浏览与搜索商品\n"
                   << " 2. 我的预约（可取消）\n"
                   << " 3. 我的交易记录\n"
-                  << " 4. 申请成为卖家 / 查看认证状态\n";
+                  << " 4. 申请成为卖家 / 查看认证状态\n"
+                  << " 5. 修改资料\n";
 
         Divider();
         Section("卖家功能");
         const bool IsSeller = CurrentUser->UserRole == Role::Seller;
         if (IsSeller)
         {
-            std::cout << " 5. 发布商品\n"
-                      << " 6. 我的商品（提交审核）\n"
-                      << " 7. 查看预约并确认\n"
-                      << " 8. 完成交易\n"
-                      << " 9. 下架商品\n";
+            std::cout << " 6. 发布商品\n"
+                      << " 7. 我的商品（提交审核）\n"
+                      << " 8. 查看预约并确认\n"
+                      << " 9. 完成交易\n"
+                      << "10. 下架商品\n"
+                      << "11. 修改商品\n";
         }
         else
         {
@@ -333,19 +339,25 @@ void Cli::TraderMenu()
             SellerApplyFlow();
             break;
         case 5:
-            if (IsSeller) { PublishItem(); } else { ShowNotice("该功能仅卖家可用"); Pause(); }
+            UpdateProfileFlow();
             break;
         case 6:
-            if (IsSeller) { MyItems(); } else { ShowNotice("该功能仅卖家可用"); Pause(); }
+            if (IsSeller) { PublishItem(); } else { ShowNotice("该功能仅卖家可用"); Pause(); }
             break;
         case 7:
-            if (IsSeller) { SellerReservations(); } else { ShowNotice("该功能仅卖家可用"); Pause(); }
+            if (IsSeller) { MyItems(); } else { ShowNotice("该功能仅卖家可用"); Pause(); }
             break;
         case 8:
-            if (IsSeller) { CompleteTradeFlow(); } else { ShowNotice("该功能仅卖家可用"); Pause(); }
+            if (IsSeller) { SellerReservations(); } else { ShowNotice("该功能仅卖家可用"); Pause(); }
             break;
         case 9:
+            if (IsSeller) { CompleteTradeFlow(); } else { ShowNotice("该功能仅卖家可用"); Pause(); }
+            break;
+        case 10:
             if (IsSeller) { OffShelfFlow(); } else { ShowNotice("该功能仅卖家可用"); Pause(); }
+            break;
+        case 11:
+            if (IsSeller) { ModifyItemFlow(); } else { ShowNotice("该功能仅卖家可用"); Pause(); }
             break;
         default:
             ShowNotice("没有这个选项");
@@ -386,6 +398,7 @@ void Cli::ShowSellerStatus()
 
 void Cli::BrowseItems()
 {
+    ClearScreen();
     Section("浏览与搜索商品");
     const std::string Keyword = Ask("关键字（直接回车表示全部）");
 
@@ -414,6 +427,7 @@ void Cli::BrowseItems()
 
 void Cli::ShowItemDetail(const Item& Goods)
 {
+    ClearScreen();
     Section("商品详情");
     std::cout << "标题：" << Goods.Title << "\n"
               << "价格：" << PriceText(Goods.PriceCents) << "\n"
@@ -454,6 +468,7 @@ void Cli::ShowItemDetail(const Item& Goods)
 
 void Cli::MyReservations()
 {
+    ClearScreen();
     Section("我的预约");
     const auto Orders = Buyer.ListMyReservations(CurrentUser->UserID);
     if (Orders.empty())
@@ -493,6 +508,7 @@ void Cli::MyReservations()
 
 void Cli::MyTrades()
 {
+    ClearScreen();
     Section("我的交易记录");
     const auto Records = Buyer.ListMyTrades(CurrentUser->UserID);
     if (Records.empty())
@@ -522,6 +538,7 @@ void Cli::MyTrades()
 
 void Cli::SellerApplyFlow()
 {
+    ClearScreen();
     Section("卖家认证");
     const auto Existing = Applications.FindByApplicant(CurrentUser->UserID);
     if (Existing.has_value())
@@ -552,10 +569,42 @@ void Cli::SellerApplyFlow()
     Pause();
 }
 
+void Cli::UpdateProfileFlow()
+{
+    ClearScreen();
+    Section("修改资料");
+    std::cout << "当前昵称：" << CurrentUser->Nickname
+              << "   联系方式：" << CurrentUser->QQNo << "\n";
+
+    const std::string Nickname = Ask("新昵称（回车保留原值）");
+    const std::string QQNo = Ask("新联系方式（回车保留原值）");
+
+    const std::string NewNickname = Nickname.empty() ? CurrentUser->Nickname : Nickname;
+    const std::string NewQQNo = QQNo.empty() ? CurrentUser->QQNo : QQNo;
+
+    std::string Error;
+    if (!Buyer.UpdateProfile(CurrentUser->UserID, NewNickname, NewQQNo, &Error))
+    {
+        ShowFailure(Error.empty() ? "修改失败" : Error);
+        Pause();
+        return;
+    }
+
+    // 会话里保存的是登录时的快照，改完要重新读取，否则界面仍显示旧资料
+    const auto Refreshed = Users.FindByID(CurrentUser->UserID);
+    if (Refreshed.has_value())
+    {
+        CurrentUser = Refreshed;
+    }
+    ShowNotice("资料已更新。");
+    Pause();
+}
+
 // ===================== 卖家功能 =====================
 
 void Cli::PublishItem()
 {
+    ClearScreen();
     Section("发布商品");
     ItemInfo Info;
 
@@ -636,6 +685,7 @@ void Cli::PublishItem()
 
 void Cli::MyItems()
 {
+    ClearScreen();
     Section("我的商品");
     const auto Goods = Seller.ListMyItems(CurrentUser->UserID);
     if (Goods.empty())
@@ -675,6 +725,7 @@ void Cli::MyItems()
 
 void Cli::SellerReservations()
 {
+    ClearScreen();
     Section("查看预约并确认");
     const auto Goods = Seller.ListMyItems(CurrentUser->UserID);
     if (Goods.empty())
@@ -731,6 +782,7 @@ void Cli::SellerReservations()
 
 void Cli::CompleteTradeFlow()
 {
+    ClearScreen();
     Section("完成交易");
     const auto Mine = Seller.ListMyItems(CurrentUser->UserID);
 
@@ -771,6 +823,7 @@ void Cli::CompleteTradeFlow()
 
 void Cli::OffShelfFlow()
 {
+    ClearScreen();
     Section("下架商品");
     std::vector<Item> Goods;
     for (const Item& Mine : Seller.ListMyItems(CurrentUser->UserID))
@@ -798,11 +851,130 @@ void Cli::OffShelfFlow()
     const Item& Target = Goods[static_cast<std::size_t>(Choice - 1)];
     if (!Seller.OffShelfItem(CurrentUser->UserID, Target.ItemID, &Error))
     {
-        ShowFailure(Error.empty() ? "下架功能尚未实现" : Error);
+        ShowFailure(Error.empty() ? "下架失败" : Error);
     }
     else
     {
-        ShowNotice("商品已下架。");
+        ShowNotice("商品已下架，进行中的交易已作废，预约记录已清除。");
+    }
+    Pause();
+}
+
+void Cli::ModifyItemFlow()
+{
+    ClearScreen();
+    Section("修改商品");
+    std::vector<Item> Goods;
+    for (const Item& Mine : Seller.ListMyItems(CurrentUser->UserID))
+    {
+        if (Mine.Status == ItemStatus::Draft || Mine.Status == ItemStatus::Rejected ||
+            Mine.Status == ItemStatus::Published)
+        {
+            Goods.push_back(Mine);
+        }
+    }
+    if (Goods.empty())
+    {
+        ShowNotice("没有可修改的商品（草稿、驳回、已发布的商品可修改）。");
+        Pause();
+        return;
+    }
+
+    PrintItems(Goods);
+    const int Choice = AskChoice("输入编号修改（0 返回）");
+    if (Choice <= 0 || static_cast<std::size_t>(Choice) > Goods.size())
+    {
+        return;
+    }
+
+    const Item& Target = Goods[static_cast<std::size_t>(Choice - 1)];
+    ItemInfo Info;
+    Info.Title = Target.Title;
+    Info.Description = Target.Description;
+    Info.ItemCategory = Target.ItemCategory;
+    Info.ItemCondition = Target.ItemCondition;
+    Info.PriceCents = Target.PriceCents;
+    Info.TradeLocation = Target.TradeLocation;
+    Info.Contact = Target.Contact;
+
+    std::cout << "直接回车表示保留原值。\n";
+
+    const std::string Title = Ask("标题（原值 " + Target.Title + "）");
+    if (!Title.empty())
+    {
+        Info.Title = Title;
+    }
+    const std::string Description = Ask("描述（原值 " + Target.Description + "）");
+    if (!Description.empty())
+    {
+        Info.Description = Description;
+    }
+
+    const std::string CategoryChoice =
+        Ask("分类 1 教材 2 数码 3 服饰 4 生活用品（原值 " + CategoryText(Target.ItemCategory) + "）");
+    if (!CategoryChoice.empty())
+    {
+        if (CategoryChoice == "1") { Info.ItemCategory = Category::Textbook; }
+        else if (CategoryChoice == "2") { Info.ItemCategory = Category::Digital; }
+        else if (CategoryChoice == "3") { Info.ItemCategory = Category::Clothing; }
+        else if (CategoryChoice == "4") { Info.ItemCategory = Category::DailyGoods; }
+        else { ShowNotice("分类无效，已取消修改。"); Pause(); return; }
+    }
+
+    const std::string ConditionChoice =
+        Ask("成色 1 全新 2 九成新 3 有瑕疵（原值 " + ConditionText(Target.ItemCondition) + "）");
+    if (!ConditionChoice.empty())
+    {
+        if (ConditionChoice == "1") { Info.ItemCondition = Condition::BrandNew; }
+        else if (ConditionChoice == "2") { Info.ItemCondition = Condition::LikeNew; }
+        else if (ConditionChoice == "3") { Info.ItemCondition = Condition::Flawed; }
+        else { ShowNotice("成色无效，已取消修改。"); Pause(); return; }
+    }
+
+    const std::string PriceInput = Ask("价格（元，原值 " + PriceText(Target.PriceCents) + "）");
+    if (!PriceInput.empty())
+    {
+        try
+        {
+            const double Yuan = std::stod(PriceInput);
+            if (Yuan > 0 && Yuan < 1000000)
+            {
+                Info.PriceCents = static_cast<long long>(std::llround(Yuan * 100.0));
+            }
+            else
+            {
+                ShowFailure("价格必须是正的数字");
+                Pause();
+                return;
+            }
+        }
+        catch (...)
+        {
+            ShowFailure("价格必须是正的数字");
+            Pause();
+            return;
+        }
+    }
+
+    const std::string TradeLocation = Ask("交易地点（原值 " + Target.TradeLocation + "）");
+    if (!TradeLocation.empty())
+    {
+        Info.TradeLocation = TradeLocation;
+    }
+    const std::string Contact = Ask("联系方式（原值 " + Target.Contact + "）");
+    if (!Contact.empty())
+    {
+        Info.Contact = Contact;
+    }
+
+    std::string Error;
+    if (!Seller.ModifyItem(CurrentUser->UserID, Target.ItemID, Info, &Error))
+    {
+        ShowFailure(Error.empty() ? "修改失败" : Error);
+    }
+    else
+    {
+        ShowNotice("商品信息已更新。");
     }
     Pause();
 }
@@ -813,6 +985,7 @@ void Cli::AdminMenu()
 {
     while (true)
     {
+        ClearScreen();
         ShowBanner();
         std::cout << "当前管理员：" << CurrentUser->Nickname
                   << "   编号 " << CurrentUser->UserID << "\n";
@@ -823,8 +996,8 @@ void Cli::AdminMenu()
                   << " 3. 用户列表\n"
                   << " 4. 操作日志\n"
                   << " 5. 平台统计\n"
-                  << " 6. 商品违规下架（尚未实现）\n"
-                  << " 7. 封禁 / 解封（尚未实现）\n"
+                  << " 6. 商品违规下架\n"
+                  << " 7. 封禁 / 解封\n"
                   << " 0. 退出登录\n";
 
         const int Choice = AskChoice("请选择");
@@ -848,12 +1021,10 @@ void Cli::AdminMenu()
             PlatformStatsScreen();
             break;
         case 6:
-            ShowNotice("违规下架功能尚未实现。");
-            Pause();
+            ViolationOffShelfFlow();
             break;
         case 7:
-            ShowNotice("封禁 / 解封功能尚未实现。");
-            Pause();
+            BanUserFlow();
             break;
         default:
             ShowNotice("没有这个选项");
@@ -864,6 +1035,7 @@ void Cli::AdminMenu()
 
 void Cli::AuditApplications()
 {
+    ClearScreen();
     Section("卖家认证审核");
     const auto Pending = Admin.ListApplications(ApplicationStatus::PendingReview);
     if (Pending.empty())
@@ -932,6 +1104,7 @@ void Cli::AuditApplications()
 
 void Cli::AuditItems()
 {
+    ClearScreen();
     Section("商品审核");
     ItemQuery Cond;
     Cond.Status = ItemStatus::PendingReview;
@@ -987,6 +1160,7 @@ void Cli::AuditItems()
 
 void Cli::UserList()
 {
+    ClearScreen();
     Section("用户列表");
     std::string Error;
     const auto UsersList = Admin.ListUsers(CurrentUser->UserID, &Error);
@@ -1013,8 +1187,115 @@ void Cli::UserList()
     Pause();
 }
 
+void Cli::ViolationOffShelfFlow()
+{
+    ClearScreen();
+    Section("商品违规下架");
+    ItemQuery Cond;
+    std::vector<Item> Goods;
+    for (const Item& Found : Admin.QueryItems(Cond, CurrentUser->UserID))
+    {
+        if (Found.Status == ItemStatus::Published || Found.Status == ItemStatus::Confirmed)
+        {
+            Goods.push_back(Found);
+        }
+    }
+    if (Goods.empty())
+    {
+        ShowNotice("没有可违规下架的已发布/已确认商品。");
+        Pause();
+        return;
+    }
+
+    PrintItems(Goods);
+    const int Choice = AskChoice("输入编号违规下架（0 返回）");
+    if (Choice <= 0 || static_cast<std::size_t>(Choice) > Goods.size())
+    {
+        return;
+    }
+
+    const Item& Target = Goods[static_cast<std::size_t>(Choice - 1)];
+    const std::string Reason = AskRequired("违规理由");
+
+    std::string Error;
+    if (!Admin.ViolationOffShelfItem(CurrentUser->UserID, Target.ItemID, Reason, &Error))
+    {
+        ShowFailure(Error.empty() ? "违规下架失败" : Error);
+    }
+    else
+    {
+        ShowNotice("商品已违规下架，进行中的交易已作废，预约记录已清除。");
+    }
+    Pause();
+}
+
+void Cli::BanUserFlow()
+{
+    ClearScreen();
+    Section("封禁 / 解封");
+    std::string Error;
+    const auto Accounts = Admin.ListUsers(CurrentUser->UserID, &Error);
+
+    std::vector<User> Targets;
+    for (const User& Account : Accounts)
+    {
+        if (Account.UserRole != Role::Admin)
+        {
+            Targets.push_back(Account);
+        }
+    }
+    if (Targets.empty())
+    {
+        ShowFailure(Error.empty() ? "没有可处置的账号" : Error);
+        Pause();
+        return;
+    }
+
+    for (std::size_t Index = 0; Index < Targets.size(); ++Index)
+    {
+        std::cout << std::setw(3) << (Index + 1) << ". "
+                  << Targets[Index].Nickname
+                  << "   角色 " << RoleText(Targets[Index].UserRole)
+                  << "   状态 " << (Targets[Index].Status == AccountStatus::Normal ? "正常" : "已封禁")
+                  << "\n";
+    }
+
+    const int Choice = AskChoice("输入编号处置（0 返回）");
+    if (Choice <= 0 || static_cast<std::size_t>(Choice) > Targets.size())
+    {
+        return;
+    }
+
+    const User& Target = Targets[static_cast<std::size_t>(Choice - 1)];
+    if (Target.Status == AccountStatus::Normal)
+    {
+        const std::string Reason = AskRequired("封禁理由");
+        if (!Admin.BanUser(CurrentUser->UserID, Target.UserID, Reason, &Error))
+        {
+            ShowFailure(Error.empty() ? "封禁失败" : Error);
+        }
+        else
+        {
+            ShowNotice("账号已封禁，名下商品已违规下架，相关交易与预约已失效。");
+        }
+    }
+    else
+    {
+        if (!Admin.UnbanUser(CurrentUser->UserID, Target.UserID, &Error))
+        {
+            ShowFailure(Error.empty() ? "解封失败" : Error);
+        }
+        else
+        {
+            ShowNotice("账号已解封。");
+        }
+    }
+    Pause();
+}
+
 void Cli::LogQueryScreen()
 {
+    ClearScreen();
     Section("操作日志");
     LogQuery Cond;
     const std::string Keyword = Ask("关键字（可留空，匹配操作人、对象编号与描述）");
@@ -1059,6 +1340,7 @@ void Cli::LogQueryScreen()
 
 void Cli::PlatformStatsScreen()
 {
+    ClearScreen();
     Section("平台统计");
     const PlatformStats Stats = Admin.GetPlatformStats(0, SystemTimeMs());
     std::cout << "统计区间：全部\n"
@@ -1096,18 +1378,22 @@ void Cli::Divider()
     std::cout << "------------------------------------------------------------\n";
 }
 
-void Cli::Pause()
+void Cli::ClearScreen()
 {
-    std::cout << "\n按回车继续...";
-    std::string Ignored;
-    std::getline(std::cin, Ignored);
-
-    // 清屏，下一屏从头开始绘制
+    std::cout.flush();
 #ifdef _WIN32
     std::system("cls");
 #else
     std::cout << "\033[2J\033[H" << std::flush;
 #endif
+}
+
+void Cli::Pause()
+{
+    std::cout << "\n按回车继续...";
+    std::string Ignored;
+    std::getline(std::cin, Ignored);
+    ClearScreen();   // 清屏，下一屏从头开始绘制
 }
 
 std::string Cli::Ask(const std::string& Prompt)

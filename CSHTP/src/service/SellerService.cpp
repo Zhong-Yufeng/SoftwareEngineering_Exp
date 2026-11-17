@@ -374,20 +374,83 @@ SellerStats SellerService::GetSellerStats(const std::string& SellerID) const
     return Result;
 }
 
-// ----- 以下函数暂未实现 ----------------------------------------
-bool SellerService::ModifyItem(const std::string&,
-                               const std::string&,
-                               const ItemInfo&,
-                               std::string*)
+bool SellerService::ModifyItem(const std::string& SellerID,
+                               const std::string& ItemID,
+                               const ItemInfo& Info,
+                               std::string* Error)
 {
-    // TODO
-    return false;
+    ClearError(Error);
+
+    if (!ServiceRules::RequireSeller(Users, SellerID, Error))
+    {
+        return false;
+    }
+
+    auto Own = FindOwnItem(Items, SellerID, ItemID, "只能修改自己的商品", Error);
+    if (!Own.has_value())
+    {
+        return false;
+    }
+
+    Item Goods = Own.value();
+    if (!Goods.Modify(Info))
+    {
+        SetError(Error, "当前状态不可修改，或商品内容不完整");
+        return false;
+    }
+    if (!Items.Save(Goods))
+    {
+        SetError(Error, "商品保存失败");
+        return false;
+    }
+    return true;
 }
 
-bool SellerService::OffShelfItem(const std::string&,
-                                 const std::string&,
-                                 std::string*)
+bool SellerService::OffShelfItem(const std::string& SellerID,
+                                 const std::string& ItemID,
+                                 std::string* Error)
 {
-    // TODO
-    return false;
+    ClearError(Error);
+
+    if (!ServiceRules::RequireSeller(Users, SellerID, Error))
+    {
+        return false;
+    }
+
+    auto Own = FindOwnItem(Items, SellerID, ItemID, "只能下架自己的商品", Error);
+    if (!Own.has_value())
+    {
+        return false;
+    }
+
+    Item Goods = Own.value();
+    if (!Goods.OffShelf())
+    {
+        SetError(Error, "仅已发布或已确认的商品可下架");
+        return false;
+    }
+
+    TransactionScope Unit(Tx);
+    if (!Unit.Ready())
+    {
+        SetError(Error, "数据库事务开启失败");
+        return false;
+    }
+    if (!Items.Save(Goods))
+    {
+        SetError(Error, "商品保存失败");
+        return false;
+    }
+
+    // 下架后商品不可再交易：进行中的交易作废，相关预约记录删除
+    ServiceRules::CancelTradesByItem(Trades, ItemID, "商品已下架", Clock());
+    Reservations.RemoveByItem(ItemID);
+
+    Logs.Record(LogType::OffShelf, SellerID, ServiceObject::Item, ItemID, "卖家下架商品");
+    if (!Unit.Commit())
+    {
+        SetError(Error, "商品保存失败");
+        return false;
+    }
+    return true;
 }

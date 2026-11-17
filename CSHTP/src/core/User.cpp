@@ -6,7 +6,8 @@ std::optional<User> User::create(const std::string& UserPhone,
                                  const std::string& Nickname,
                                  const std::string& QQNo)
 {
-    if (UserPhone.empty() && UserStdNo.empty())
+    // 手机号是唯一登录账号，手机号与学号都必须填写
+    if (UserPhone.empty() || UserStdNo.empty())
     {
         return std::nullopt;
     }
@@ -84,21 +85,39 @@ bool User::Unban()
     return true;
 }
 
-// ----- 以下函数暂未实现 ----------------------------------------
-bool User::ChangePassword(const std::string&, const std::string&)
+bool User::ChangePassword(const std::string& OldPassword, const std::string& NewPassword)
 {
-    // TODO
-    return false;
+    // 旧密码必须匹配，新密码沿用注册时的长度下限
+    if (OldPassword != Password || NewPassword.size() < 6)
+    {
+        return false;
+    }
+
+    Password = NewPassword;
+    return true;
 }
 
-bool User::UpdateProfile(const std::string&, const std::string&)
+bool User::UpdateProfile(const std::string& NewNickname, const std::string& NewQQNo)
 {
-    // TODO
-    return false;
+    // 注册时昵称与联系方式就是必填，改资料时保持同一规则
+    if (NewNickname.empty() || NewQQNo.empty())
+    {
+        return false;
+    }
+
+    Nickname = NewNickname;
+    QQNo = NewQQNo;
+    return true;
 }
 
-bool User::AssignID(const std::string&)
+bool User::AssignID(const std::string& NewID)
 {
-    // TODO
-    return false;
+    // 编号只允许在为空时补写一次，已有编号不允许覆盖
+    if (!UserID.empty() || NewID.empty())
+    {
+        return false;
+    }
+
+    UserID = NewID;
+    return true;
 }

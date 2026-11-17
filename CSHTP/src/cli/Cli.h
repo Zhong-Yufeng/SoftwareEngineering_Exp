@@ -72,6 +72,7 @@ class Cli
         void MyReservations();
         void MyTrades();
         void SellerApplyFlow();
+        void UpdateProfileFlow();
 
         // ==================== 卖家功能 ====================
         void PublishItem();
@@ -79,6 +80,7 @@ class Cli
         void SellerReservations();
         void CompleteTradeFlow();
         void OffShelfFlow();
+        void ModifyItemFlow();
 
         // ==================== 管理员功能 ====================
         void AuditApplications();
@@ -86,10 +88,13 @@ class Cli
         void UserList();
         void LogQueryScreen();
         void PlatformStatsScreen();
+        void ViolationOffShelfFlow();
+        void BanUserFlow();
 
         // ==================== 显示与输入 ====================
         void ShowBanner();
         void ShowAccounts();
+        void ClearScreen();
         void Section(const std::string& Text);
         void Divider();
         void Pause();

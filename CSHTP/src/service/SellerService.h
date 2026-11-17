@@ -74,7 +74,6 @@ class SellerService
 
         SellerStats GetSellerStats(const std::string& SellerID) const;
 
-        // ----- 以下函数暂未实现 ----------------------------------------
         bool ModifyItem(const std::string& SellerID,
                         const std::string& ItemID,
                         const ItemInfo& Info,

@@ -1,0 +1,150 @@
+@startuml UML类图
+' 校园二手交易平台 —— 领域类图（只画 core 实体与 enums.h 枚举）
+' 属性/方法与 CSHTP/src/core 保持一致；store/service/cli 见组件图
+title 校园二手交易平台 领域类图
+
+skinparam classAttributeIconSize 0
+skinparam linetype polyline
+skinparam nodesep 60
+skinparam ranksep 60
+skinparam nodesep 45
+skinparam ranksep 55
+skinparam classFontSize 13
+skinparam classAttributeFontSize 12
+hide circle
+hide empty members
+skinparam shadowing false
+
+package "core（领域实体）" {
+
+class "User 用户" as User {
+  + UserID : string
+  + UserPhone : string
+  + UserStdNo : string
+  + Password : string
+  + Nickname : string
+  + QQNo : string
+  + Status : AccountStatus
+  + Reason : string
+  + UserRole : Role
+  ____
+  + create() / createAdmin()
+  + ChangePassword()
+  + UpdateProfile()
+  + BecomeSeller()
+  + Ban() / Unban()
+  + AssignID()
+}
+
+class "Item 商品" as Item {
+  + ItemID : string
+  + Title : string
+  + Description : string
+  + ItemCategory : Category
+  + PriceCents : long long
+  + ItemCondition : Condition
+  + TradeLocation : string
+  + Contact : string
+  + Status : ItemStatus
+  + PublishedAtMs : long long
+  + RejectReason : string
+  + SellerID : string
+  ____
+  + CreateDraft()
+  + Modify()
+  + SubmitForReview()
+  + Approve() / Reject()
+  + Confirm()
+  + OffShelf() / ViolationOffShelf()
+  + CompleteTrade()
+}
+
+class "Reservation 预约" as Reservation {
+  + ReservationID : string
+  + BuyerID : string
+  + ItemID : string
+  + CreatedAtMs : long long
+  + Status : ReservationStatus
+  + ConfirmedAtMs : long long
+  ____
+  + Create()
+  + Confirm()
+}
+
+class "TradeRecord 交易记录" as TradeRecord {
+  + TradeID : string
+  + ReservationID : string
+  + ItemID : string
+  + BuyerID : string
+  + SellerID : string
+  + Status : TradeStatus
+  + CreatedAtMs : long long
+  + CompletedAtMs : long long
+  + CancelledAtMs : long long
+  + CancelReason : string
+  + ItemTitle : string
+  + PriceCents : long long
+  + TradeLocation : string
+  + SellerContact : string
+  + BuyerContact : string
+  ____
+  + Create()
+  + Complete()
+  + Cancel()
+  + IsParticipant()
+}
+
+class "SellerApplication 卖家申请" as SellerApplication {
+  + ApplicationID : string
+  + ApplicantID : string
+  + RealName : string
+  + AuditStatus : ApplicationStatus
+  + SubmittedAtMs : long long
+  + AuditedAtMs : long long
+  + RejectReason : string
+  + ReviewerID : string
+  ____
+  + Create()
+  + Approve()
+  + Reject()
+}
+
+class "AuditRecord 审核记录" as AuditRecord {
+  + RecordID : string
+  + ItemID : string
+  + ReviewerID : string
+  + Result : AuditResult
+  + AuditedAtMs : long long
+  + Reason : string
+  ____
+  + Create()
+}
+
+class "OperationLog 操作日志" as OperationLog {
+  + LogID : string
+  + Type : LogType
+  + OperatedAtMs : long long
+  + OperatorID : string
+  + ObjectType : string
+  + ObjectID : string
+  + Description : string
+  ____
+  + Create()
+}
+
+}
+
+' ===== 实体关联 =====
+User "1" -- "0..*" Item : 发布 >
+User "1" -- "0..*" Reservation : 预约 >
+Item "1" -- "0..*" Reservation : 被预约 >
+Reservation "1" -- "0..1" TradeRecord : 生成 >
+User "1" -- "0..*" TradeRecord : 买方 >
+User "1" -- "0..*" TradeRecord : 卖方 >
+Item "1" -- "0..*" TradeRecord : 交易对象 >
+User "1" -- "0..*" SellerApplication : 申请/审核 >
+Item "1" -- "0..*" AuditRecord : 被审核 >
+User "1" -- "0..*" AuditRecord : 审核 >
+User "1" -- "0..*" OperationLog : 操作 >
+
+@enduml
